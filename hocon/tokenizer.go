@@ -2,6 +2,7 @@ package hocon
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -28,12 +29,14 @@ func (p *Tokenizer) Push() {
 	p.indexStack.Push(p.index)
 }
 
-func (p *Tokenizer) Pop() {
+func (p *Tokenizer) Pop() error {
 	index, err := p.indexStack.Pop()
 	if err != nil {
-		panic(err)
+		return err
 	}
+
 	p.index = index
+	return nil
 }
 
 func (p *Tokenizer) EOF() bool {
@@ -110,20 +113,23 @@ func NewHoconTokenizer(text string) *HoconTokenizer {
 	return &HoconTokenizer{NewTokenizer(text)}
 }
 
-func (p *HoconTokenizer) PullWhitespaceAndComments() {
+func (p *HoconTokenizer) PullWhitespaceAndComments() error {
 	for {
 		p.PullWhitespace()
 		for p.IsStartOfComment() {
-			p.PullComment()
+			if _, err := p.PullComment(); err != nil {
+				return err
+			}
 		}
 
 		if !p.IsWhitespace() {
 			break
 		}
 	}
+	return nil
 }
 
-func (p *HoconTokenizer) PullRestOfLine() string {
+func (p *HoconTokenizer) PullRestOfLine() (string, error) {
 	buf := bytes.NewBuffer(nil)
 
 	for !p.EOF() {
@@ -136,18 +142,20 @@ func (p *HoconTokenizer) PullRestOfLine() string {
 			continue
 		}
 		if err := buf.WriteByte(c); err != nil {
-			panic(err)
+			return "", err
 		}
 	}
 
-	return strings.TrimSpace(buf.String())
+	return strings.TrimSpace(buf.String()), nil
 }
 
 func (p *HoconTokenizer) PullNext() (*Token, error) {
 	var token *Token
 	var err error
 
-	p.PullWhitespaceAndComments()
+	if err := p.PullWhitespaceAndComments(); err != nil {
+		return nil, err
+	}
 	if p.IsDot() {
 		token = p.PullDot()
 	} else if p.IsObjectStart() {
@@ -169,7 +177,10 @@ func (p *HoconTokenizer) PullNext() (*Token, error) {
 			return nil, err
 		}
 	} else if p.IsUnquotedKeyStart() {
-		token = p.PullUnquotedKey()
+		token, err = p.PullUnquotedKey()
+		if err != nil {
+			return nil, err
+		}
 	} else if p.IsArrayStart() {
 		token = p.PullArrayStart()
 	} else if p.IsArrayEnd() {
@@ -278,20 +289,22 @@ func (p *HoconTokenizer) IsStartOfTripleQuotedText() bool {
 	return p.Matches("\"\"\"")
 }
 
-func (p *HoconTokenizer) PullComment() *Token {
-	p.PullRestOfLine()
-	return NewToken(TokenTypeComment)
+func (p *HoconTokenizer) PullComment() (*Token, error) {
+	if _, err := p.PullRestOfLine(); err != nil {
+		return nil, err
+	}
+	return NewToken(TokenTypeComment), nil
 }
 
-func (p *HoconTokenizer) PullUnquotedKey() *Token {
+func (p *HoconTokenizer) PullUnquotedKey() (*Token, error) {
 	buf := bytes.NewBuffer(nil)
 	for !p.EOF() && p.IsUnquotedKey() {
 		if err := buf.WriteByte(p.TakeOne()); err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 
-	return DefaultToken.Key(strings.TrimSpace(buf.String()))
+	return DefaultToken.Key(strings.TrimSpace(buf.String())), nil
 }
 
 func (p *HoconTokenizer) IsUnquotedKey() bool {
@@ -310,17 +323,17 @@ func (p *HoconTokenizer) IsWhitespaceOrComment() bool {
 	return p.IsWhitespace() || p.IsStartOfComment()
 }
 
-func (p *HoconTokenizer) PullTripleQuotedText() *Token {
+func (p *HoconTokenizer) PullTripleQuotedText() (*Token, error) {
 	buf := bytes.NewBuffer(nil)
 	p.Take(3)
 	for !p.EOF() && !p.Matches("\"\"\"") {
 		if err := buf.WriteByte(p.Peek()); err != nil {
-			panic(err)
+			return nil, err
 		}
 		p.TakeOne()
 	}
 	p.Take(3)
-	return DefaultToken.LiteralValue(buf.String())
+	return DefaultToken.LiteralValue(buf.String()), nil
 }
 
 func (p *HoconTokenizer) PullQuotedText() (*Token, error) {
@@ -373,7 +386,9 @@ func (p *HoconTokenizer) PullQuotedKey() (*Token, error) {
 
 func (p *HoconTokenizer) PullInclude() (*Token, error) {
 	p.Take(len("include"))
-	p.PullWhitespaceAndComments()
+	if err := p.PullWhitespaceAndComments(); err != nil {
+		return nil, err
+	}
 	rest, err := p.PullQuotedText()
 	if err != nil {
 		return nil, err
@@ -425,7 +440,7 @@ func (p *HoconTokenizer) PullValue() (*Token, error) {
 	}
 
 	if p.IsStartOfTripleQuotedText() {
-		return p.PullTripleQuotedText(), nil
+		return p.PullTripleQuotedText()
 	}
 
 	if p.IsStartOfQuotedText() {
@@ -433,7 +448,7 @@ func (p *HoconTokenizer) PullValue() (*Token, error) {
 	}
 
 	if p.isUnquotedText() {
-		return p.pullUnquotedText(), nil
+		return p.pullUnquotedText()
 	}
 
 	if p.IsArrayStart() {
@@ -445,7 +460,7 @@ func (p *HoconTokenizer) PullValue() (*Token, error) {
 	}
 
 	if p.IsSubstitutionStart() {
-		return p.pullSubstitution(), nil
+		return p.pullSubstitution()
 	}
 
 	return nil, fmt.Errorf("expected value: Null literal, Array, Quoted Text, Unquoted Text, Triple quoted Text, Object or End of array")
@@ -458,13 +473,16 @@ func (p *HoconTokenizer) IsSubstitutionStart() bool {
 func (p *HoconTokenizer) IsInclude() bool {
 	p.Push()
 	defer func() {
-		recover()
-		p.Pop()
+		if err := p.Pop(); err != nil {
+			panic(err)
+		}
 	}()
 	if p.Matches("include") {
 		p.Take(len("include"))
 		if p.IsWhitespaceOrComment() {
-			p.PullWhitespaceAndComments()
+			if err := p.PullWhitespaceAndComments(); err != nil {
+				return false
+			}
 			if p.IsStartOfQuotedText() {
 				if _, err := p.PullQuotedText(); err != nil {
 					return false
@@ -477,7 +495,7 @@ func (p *HoconTokenizer) IsInclude() bool {
 	return false
 }
 
-func (p *HoconTokenizer) pullSubstitution() *Token {
+func (p *HoconTokenizer) pullSubstitution() (*Token, error) {
 	buf := bytes.NewBuffer(nil)
 	p.Take(2)
 	isOptional := false
@@ -488,11 +506,11 @@ func (p *HoconTokenizer) pullSubstitution() *Token {
 
 	for !p.EOF() && p.isUnquotedText() {
 		if err := buf.WriteByte(p.TakeOne()); err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 	p.TakeOne()
-	return DefaultToken.Substitution(buf.String(), isOptional)
+	return DefaultToken.Substitution(buf.String(), isOptional), nil
 }
 
 func (p *HoconTokenizer) IsSpaceOrTab() bool {
@@ -511,31 +529,31 @@ func (p *HoconTokenizer) IsStartSimpleValue() bool {
 	return false
 }
 
-func (p *HoconTokenizer) PullSpaceOrTab() *Token {
+func (p *HoconTokenizer) PullSpaceOrTab() (*Token, error) {
 	buf := bytes.NewBuffer(nil)
 	for p.IsSpaceOrTab() {
 		if err := buf.WriteByte(p.TakeOne()); err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
-	return DefaultToken.LiteralValue(buf.String())
+	return DefaultToken.LiteralValue(buf.String()), nil
 }
 
-func (p *HoconTokenizer) pullUnquotedText() *Token {
+func (p *HoconTokenizer) pullUnquotedText() (*Token, error) {
 	buf := bytes.NewBuffer(nil)
 	for !p.EOF() && p.isUnquotedText() {
 		if err := buf.WriteByte(p.TakeOne()); err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
-	return DefaultToken.LiteralValue(buf.String())
+	return DefaultToken.LiteralValue(buf.String()), nil
 }
 
 func (p *HoconTokenizer) isUnquotedText() bool {
 	return !p.EOF() && !p.IsWhitespace() && !p.IsStartOfComment() && strings.IndexByte(HoconNotInUnquotedText, p.Peek()) == -1
 }
 
-func (p *HoconTokenizer) PullSimpleValue() *Token {
+func (p *HoconTokenizer) PullSimpleValue() (*Token, error) {
 	if p.IsSpaceOrTab() {
 		return p.PullSpaceOrTab()
 	}
@@ -543,7 +561,7 @@ func (p *HoconTokenizer) PullSimpleValue() *Token {
 	if p.isUnquotedText() {
 		return p.pullUnquotedText()
 	}
-	panic("No simple value found")
+	return nil, errors.New("no simple value found")
 }
 
 func (p *HoconTokenizer) isValue() bool {
