@@ -27,7 +27,7 @@ func (p *Stack) Pop() (int, error) {
 
 	l := len(p.values)
 	if l == 0 {
-		return 0, errors.New("Empty Stack")
+		return 0, errors.New("empty stack")
 	}
 
 	res := p.values[l-1]

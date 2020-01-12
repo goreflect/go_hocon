@@ -62,9 +62,9 @@ func (p *Config) Copy(fallback ...*Config) *Config {
 	}
 }
 
-func (p *Config) GetNode(path string) *hocon.HoconValue {
+func (p *Config) GetNode(path string) (*hocon.HoconValue, error) {
 	if p == nil {
-		return nil
+		return nil, nil
 	}
 
 	elements := splitDottedPathHonouringQuotes(path)
@@ -75,205 +75,297 @@ func (p *Config) GetNode(path string) *hocon.HoconValue {
 	}
 
 	for _, key := range elements {
-		currentNode = currentNode.GetChildObject(key)
+		var err error
+		currentNode, err = currentNode.GetChildObject(key)
+		if err != nil {
+			return nil, err
+		}
+
 		if currentNode == nil {
 			if p.fallback != nil {
 				return p.fallback.GetNode(path)
 			}
-			return nil
+			return nil, nil
 		}
 	}
-	return currentNode
+	return currentNode, nil
 }
 
-func (p *Config) GetBoolean(path string, defaultVal ...bool) bool {
-	obj := p.GetNode(path)
+func (p *Config) GetBoolean(path string, defaultVal ...bool) (bool, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return false, err
+	}
+
 	if obj == nil {
 		if len(defaultVal) > 0 {
-			return defaultVal[0]
+			return defaultVal[0], nil
 		}
-		return false
+		return false, nil
 	}
 	return obj.GetBoolean()
 }
 
-func (p *Config) GetByteSize(path string) *big.Int {
-	obj := p.GetNode(path)
+func (p *Config) GetByteSize(path string) (*big.Int, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return nil, err
+	}
+
 	if obj == nil {
-		return big.NewInt(-1)
+		return big.NewInt(-1), nil
 	}
 	return obj.GetByteSize()
 }
 
-func (p *Config) GetInt32(path string, defaultVal ...int32) int32 {
-	obj := p.GetNode(path)
+func (p *Config) GetInt32(path string, defaultVal ...int32) (int32, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return 0, err
+	}
+
 	if obj == nil {
 		if len(defaultVal) > 0 {
-			return defaultVal[0]
+			return defaultVal[0], nil
 		}
-		return 0
+		return 0, nil
 	}
 	return obj.GetInt32()
 }
 
-func (p *Config) GetInt64(path string, defaultVal ...int64) int64 {
-	obj := p.GetNode(path)
+func (p *Config) GetInt64(path string, defaultVal ...int64) (int64, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return 0, err
+	}
+
 	if obj == nil {
 		if len(defaultVal) > 0 {
-			return defaultVal[0]
+			return defaultVal[0], nil
 		}
-		return 0
+		return 0, nil
 	}
 	return obj.GetInt64()
 }
 
-func (p *Config) GetString(path string, defaultVal ...string) string {
-	obj := p.GetNode(path)
+func (p *Config) GetString(path string, defaultVal ...string) (string, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return "", err
+	}
+
 	if obj == nil {
 		if len(defaultVal) > 0 {
-			return defaultVal[0]
+			return defaultVal[0], nil
 		}
-		return ""
+		return "", nil
 	}
 	return obj.GetString()
 }
 
-func (p *Config) GetFloat32(path string, defaultVal ...float32) float32 {
-	obj := p.GetNode(path)
+func (p *Config) GetFloat32(path string, defaultVal ...float32) (float32, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return 0, err
+	}
+
 	if obj == nil {
 		if len(defaultVal) > 0 {
-			return defaultVal[0]
+			return defaultVal[0], nil
 		}
+		return 0, nil
 	}
 	return obj.GetFloat32()
 }
 
-func (p *Config) GetFloat64(path string, defaultVal ...float64) float64 {
-	obj := p.GetNode(path)
+func (p *Config) GetFloat64(path string, defaultVal ...float64) (float64, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return 0, err
+	}
+
 	if obj == nil {
 		if len(defaultVal) > 0 {
-			return defaultVal[0]
+			return defaultVal[0], nil
 		}
-		return 0
+		return 0, nil
 	}
 	return obj.GetFloat64()
 }
 
-func (p *Config) GetTimeDuration(path string, defaultVal ...time.Duration) time.Duration {
-	obj := p.GetNode(path)
+func (p *Config) GetTimeDuration(path string, defaultVal ...time.Duration) (time.Duration, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return 0, err
+	}
+
 	if obj == nil {
 		if len(defaultVal) > 0 {
-			return defaultVal[0]
+			return defaultVal[0], nil
 		}
-		return 0
+		return 0, nil
 	}
 	return obj.GetTimeDuration(true)
 }
 
-func (p *Config) GetTimeDurationInfiniteNotAllowed(path string, defaultVal ...time.Duration) time.Duration {
-	obj := p.GetNode(path)
+func (p *Config) GetTimeDurationInfiniteNotAllowed(path string, defaultVal ...time.Duration) (time.Duration, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return 0, err
+	}
+
 	if obj == nil {
 		if len(defaultVal) > 0 {
-			return defaultVal[0]
+			return defaultVal[0], nil
 		}
-		return 0
+		return 0, nil
 	}
 	return obj.GetTimeDuration(false)
 }
 
-func (p *Config) GetBooleanList(path string) []bool {
-	obj := p.GetNode(path)
+func (p *Config) GetBooleanList(path string) ([]bool, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return nil, err
+	}
+
 	if obj == nil {
-		return nil
+		return nil, nil
 	}
 	return obj.GetBooleanList()
 }
 
-func (p *Config) GetFloat32List(path string) []float32 {
-	obj := p.GetNode(path)
+func (p *Config) GetFloat32List(path string) ([]float32, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return nil, err
+	}
+
 	if obj == nil {
-		return nil
+		return nil, nil
 	}
 	return obj.GetFloat32List()
 }
 
-func (p *Config) GetFloat64List(path string) []float64 {
-	obj := p.GetNode(path)
+func (p *Config) GetFloat64List(path string) ([]float64, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return nil, err
+	}
+
 	if obj == nil {
-		return nil
+		return nil, nil
 	}
 	return obj.GetFloat64List()
 }
 
-func (p *Config) GetInt32List(path string) []int32 {
-	obj := p.GetNode(path)
+func (p *Config) GetInt32List(path string) ([]int32, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return nil, err
+	}
+
 	if obj == nil {
-		return nil
+		return nil, nil
 	}
 	return obj.GetInt32List()
 }
 
-func (p *Config) GetInt64List(path string) []int64 {
-	obj := p.GetNode(path)
+func (p *Config) GetInt64List(path string) ([]int64, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return nil, err
+	}
+
 	if obj == nil {
-		return nil
+		return nil, nil
 	}
 	return obj.GetInt64List()
 }
 
-func (p *Config) GetByteList(path string) []byte {
-	obj := p.GetNode(path)
+func (p *Config) GetByteList(path string) ([]byte, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return nil, err
+	}
+
 	if obj == nil {
-		return nil
+		return nil, nil
 	}
 	return obj.GetByteList()
 }
 
-func (p *Config) GetStringList(path string) []string {
-	obj := p.GetNode(path)
+func (p *Config) GetStringList(path string) ([]string, error) {
+	obj, err := p.GetNode(path)
+	if err != nil {
+		return nil, err
+	}
+
 	if obj == nil {
-		return nil
+		return nil, nil
 	}
 	return obj.GetStringList()
 }
 
-func (p *Config) GetConfig(path string) *Config {
+func (p *Config) GetConfig(path string) (*Config, error) {
 	if p == nil {
-		return nil
+		return nil, nil
 	}
 
-	value := p.GetNode(path)
+	value, err := p.GetNode(path)
+	if err != nil {
+		return nil, err
+	}
+
 	if p.fallback != nil {
-		f := p.fallback.GetConfig(path)
+		f, err := p.fallback.GetConfig(path)
+		if err != nil {
+			return nil, err
+		}
+
 		if value == nil && f == nil {
-			return nil
+			return nil, nil
 		}
 		if value == nil {
-			return f
+			return f, nil
 		}
 		return NewConfigFromRoot(hocon.NewHoconRoot(value)).WithFallback(f)
 	}
 
 	if value == nil {
-		return nil
+		return nil, nil
 	}
-	return NewConfigFromRoot(hocon.NewHoconRoot(value))
+	return NewConfigFromRoot(hocon.NewHoconRoot(value)), nil
 }
 
-func (p *Config) GetValue(path string) *hocon.HoconValue {
+func (p *Config) GetValue(path string) (*hocon.HoconValue, error) {
 	return p.GetNode(path)
 }
 
-func (p *Config) WithFallback(fallback *Config) *Config {
+func (p *Config) WithFallback(fallback *Config) (*Config, error) {
 	if fallback == p {
-		panic("Config can not have itself as fallback")
+		return nil, nil
 	}
 
 	if fallback == nil {
-		return p
+		return p, nil
 	}
 
-	mergedRoot := p.root.GetObject().MergeImmutable(fallback.root.GetObject())
+	selfObjectV, err := p.root.GetObject()
+	if err != nil {
+		return nil, err
+	}
+
+	fallbackObjectV, err := fallback.root.GetObject()
+	if err != nil {
+		return nil, err
+	}
+
+	mergedRoot, err := selfObjectV.MergeImmutable(fallbackObjectV)
+	if err != nil {
+		return nil, err
+	}
+
 	newRoot := hocon.NewHoconValue()
 
 	newRoot.AppendValue(mergedRoot)
@@ -282,16 +374,21 @@ func (p *Config) WithFallback(fallback *Config) *Config {
 
 	mergedConfig.root = newRoot
 
-	return mergedConfig
+	return mergedConfig, nil
 }
 
 func (p *Config) HasPath(path string) bool {
-	return p.GetNode(path) != nil
+	node, err := p.GetNode(path)
+	if err != nil {
+		return false
+	}
+
+	return node != nil
 }
 
 func (p *Config) IsObject(path string) bool {
-	node := p.GetNode(path)
-	if node == nil {
+	node, err := p.GetNode(path)
+	if err != nil || node == nil {
 		return false
 	}
 
@@ -299,22 +396,30 @@ func (p *Config) IsObject(path string) bool {
 }
 
 func (p *Config) IsArray(path string) bool {
-	node := p.GetNode(path)
-	if node == nil {
+	node, err := p.GetNode(path)
+	if err != nil || node == nil {
 		return false
 	}
 
 	return node.IsArray()
 }
 
-func (p *Config) AddConfig(textConfig string, fallbackConfig *Config) *Config {
-	root := hocon.Parse(textConfig, nil)
+func (p *Config) AddConfig(textConfig string, fallbackConfig *Config) (*Config, error) {
+	root, err := hocon.Parse(textConfig, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	config := NewConfigFromRoot(root)
 	return config.WithFallback(fallbackConfig)
 }
 
-func (p *Config) AddConfigWithTextFallback(config *Config, textFallback string) *Config {
-	fallbackRoot := hocon.Parse(textFallback, nil)
+func (p *Config) AddConfigWithTextFallback(config *Config, textFallback string) (*Config, error) {
+	fallbackRoot, err := hocon.Parse(textFallback, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	fallbackConfig := NewConfigFromRoot(fallbackRoot)
 	return config.WithFallback(fallbackConfig)
 }
