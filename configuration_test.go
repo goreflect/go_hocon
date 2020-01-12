@@ -17,7 +17,7 @@ func TestParseKeyOrder(t *testing.T) {
 			wg.Done()
 		}()
 
-		for i := 0; i < 100000; i++ {
+		for i := 0; i < 1000; i++ {
 			conf := LoadConfig("tests/configs.conf")
 			for g := 1; g < 3; g++ {
 				for i := 1; i < 4; i++ {
