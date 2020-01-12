@@ -1,6 +1,8 @@
 package hocon
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"strings"
 )
@@ -42,7 +44,7 @@ func (p *Parser) parseText(text string, callback IncludeCallback) (*HoconRoot, e
 			envVal, exist := os.LookupEnv(sub.OriginalPath)
 			if !exist {
 				if !sub.IsOptional {
-					panic("Unresolved substitution:" + sub.Path)
+					return nil, fmt.Errorf("unresolved substitution: %s", sub.Path)
 				}
 			} else {
 				hv := NewHoconValue()
@@ -174,7 +176,7 @@ func (p *Parser) parseKeyContent(value *HoconValue, currentPath string) error {
 
 func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath string) error {
 	if p.reader.EOF() {
-		panic("End of file reached while trying to read a value")
+		return errors.New("end of file reached while trying to read a value")
 	}
 
 	p.reader.PullWhitespaceAndComments()
@@ -267,7 +269,7 @@ func getNode(root *HoconValue, path string) (*HoconValue, error) {
 	currentNode := root
 
 	if currentNode == nil {
-		panic("Current node should not be null")
+		return nil, errors.New("current node should not be null")
 	}
 
 	for _, key := range elements {

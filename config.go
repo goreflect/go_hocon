@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"errors"
 	"math/big"
 	"strings"
 	"time"
@@ -14,26 +15,26 @@ type Config struct {
 	fallback      *Config
 }
 
-func NewConfigFromRoot(root *hocon.HoconRoot) *Config {
+func NewConfigFromRoot(root *hocon.HoconRoot) (*Config, error) {
 	if root.Value() == nil {
-		panic("The root value cannot be null.")
+		return nil, errors.New("the root value cannot be null")
 	}
 
 	return &Config{
 		root:          root.Value(),
 		substitutions: root.Substitutions(),
-	}
+	}, nil
 }
 
-func NewConfigFromConfig(source, fallback *Config) *Config {
+func NewConfigFromConfig(source, fallback *Config) (*Config, error) {
 	if source == nil {
-		panic("The source configuration cannot be null.")
+		return nil, errors.New("the source configuration cannot be null")
 	}
 
 	return &Config{
 		root:     source.root,
 		fallback: fallback,
-	}
+	}, nil
 }
 
 func (p *Config) IsEmpty() bool {
@@ -71,7 +72,7 @@ func (p *Config) GetNode(path string) (*hocon.HoconValue, error) {
 	currentNode := p.root
 
 	if currentNode == nil {
-		panic("Current node should not be null")
+		return nil, errors.New("current node should not be null")
 	}
 
 	for _, key := range elements {
@@ -329,13 +330,18 @@ func (p *Config) GetConfig(path string) (*Config, error) {
 		if value == nil {
 			return f, nil
 		}
-		return NewConfigFromRoot(hocon.NewHoconRoot(value)).WithFallback(f)
+		root, err := NewConfigFromRoot(hocon.NewHoconRoot(value))
+		if err != nil {
+			return nil, err
+		}
+
+		return root.WithFallback(f)
 	}
 
 	if value == nil {
 		return nil, nil
 	}
-	return NewConfigFromRoot(hocon.NewHoconRoot(value)), nil
+	return NewConfigFromRoot(hocon.NewHoconRoot(value))
 }
 
 func (p *Config) GetValue(path string) (*hocon.HoconValue, error) {
@@ -410,7 +416,11 @@ func (p *Config) AddConfig(textConfig string, fallbackConfig *Config) (*Config, 
 		return nil, err
 	}
 
-	config := NewConfigFromRoot(root)
+	config, err := NewConfigFromRoot(root)
+	if err != nil {
+		return nil, err
+	}
+
 	return config.WithFallback(fallbackConfig)
 }
 
@@ -420,7 +430,11 @@ func (p *Config) AddConfigWithTextFallback(config *Config, textFallback string) 
 		return nil, err
 	}
 
-	fallbackConfig := NewConfigFromRoot(fallbackRoot)
+	fallbackConfig, err := NewConfigFromRoot(fallbackRoot)
+	if err != nil {
+		return nil, err
+	}
+
 	return config.WithFallback(fallbackConfig)
 }
 

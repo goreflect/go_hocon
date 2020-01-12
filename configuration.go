@@ -19,7 +19,7 @@ func ParseString(text string, includeCallback ...hocon.IncludeCallback) (*Config
 		return nil, err
 	}
 
-	return NewConfigFromRoot(root), nil
+	return NewConfigFromRoot(root)
 }
 
 func LoadConfig(filename string) (*Config, error) {
