@@ -18,6 +18,19 @@ func NewHoconObject() *HoconObject {
 	}
 }
 
+// makeHoconObject creates object with text values for test purposes
+func makeHoconObject(keys []string, values []string) *HoconObject {
+	items := make(map[string]*HoconValue)
+	for k, v := range keys {
+		items[v] = &HoconValue{values: []HoconElement{NewHoconLiteral(values[k])}}
+	}
+
+	return &HoconObject{
+		keys:  keys,
+		items: items,
+	}
+}
+
 func (p *HoconObject) GetString() (string, error) {
 	return "", errors.New("this element is an object and not a string")
 }
@@ -80,6 +93,9 @@ func (p *HoconObject) GetOrCreateKey(key string) *HoconValue {
 	}
 
 	child := NewHoconValue()
+	if p.items == nil {
+		p.items = map[string]*HoconValue{}
+	}
 	p.items[key] = child
 	p.keys = append(p.keys, key)
 	return child

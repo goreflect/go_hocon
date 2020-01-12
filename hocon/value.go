@@ -235,6 +235,10 @@ func (p *HoconValue) ToString(indent int) (string, error) {
 		return "[" + strings.Join(sstr, ",") + "]", nil
 	}
 
+	if p.IsEmpty() {
+		return "", nil
+	}
+
 	return "<<unknown value>>", nil
 }
 
