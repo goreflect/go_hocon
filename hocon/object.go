@@ -131,6 +131,9 @@ func (p *HoconObject) ToString(indent int) (string, error) {
 
 func (p *HoconObject) Merge(other *HoconObject) error {
 	thisValues := p.items
+	if other == nil {
+		return nil
+	}
 	otherItems := other.items
 
 	otherKeys := other.keys

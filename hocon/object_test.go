@@ -16,7 +16,7 @@ func TestHoconObject_GetArray(t *testing.T) {
 		want    []*HoconValue
 		wantErr bool
 	}{
-		{name: "empty", fields: fields{}, want: nil, wantErr: true},
+		{name: "object can not return an array", fields: fields{}, want: nil, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -51,7 +51,7 @@ func TestHoconObject_GetKey(t *testing.T) {
 		want   *HoconValue
 	}{
 		{
-			name: "simple",
+			name: "object returns correct value by key",
 			fields: fields{
 				items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}},
 				keys:  []string{"a"},
@@ -60,7 +60,7 @@ func TestHoconObject_GetKey(t *testing.T) {
 			want: &HoconValue{values: []HoconElement{NewHoconLiteral("b")}},
 		},
 		{
-			name:   "unknown",
+			name:   "object returns nil by unknown key",
 			fields: fields{},
 			args:   args{key: "a"},
 			want:   nil,
@@ -90,14 +90,14 @@ func TestHoconObject_GetKeys(t *testing.T) {
 		want   []string
 	}{
 		{
-			name: "simple",
+			name: "object returns existed keys correctly",
 			fields: fields{
 				keys: []string{"a", "c", "d"},
 			},
 			want: []string{"a", "c", "d"},
 		},
 		{
-			name:   "unknown",
+			name:   "empty object returns nil instead of keys", // todo maybe should return empty list
 			fields: fields{},
 			want:   nil,
 		},
@@ -130,7 +130,7 @@ func TestHoconObject_GetOrCreateKey(t *testing.T) {
 		want   *HoconValue
 	}{
 		{
-			name: "simple",
+			name: "object returns current value as oldValue",
 			fields: fields{
 				items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}},
 				keys:  []string{"a"},
@@ -139,7 +139,7 @@ func TestHoconObject_GetOrCreateKey(t *testing.T) {
 			want: &HoconValue{oldValue: &HoconValue{values: []HoconElement{NewHoconLiteral("b")}}},
 		},
 		{
-			name: "existedMap",
+			name: "object returns empty value if it didn't exist",
 			fields: fields{
 				items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}},
 				keys:  []string{"a"},
@@ -148,7 +148,7 @@ func TestHoconObject_GetOrCreateKey(t *testing.T) {
 			want: &HoconValue{},
 		},
 		{
-			name:   "noMapNewValue",
+			name:   "object returns empty value if it didn't have any fields",
 			fields: fields{},
 			args:   args{key: "a"},
 			want:   &HoconValue{},
@@ -178,7 +178,12 @@ func TestHoconObject_GetString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "object can not return a string",
+			fields:  fields{},
+			want:    "",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -208,7 +213,11 @@ func TestHoconObject_IsArray(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "object is not an array",
+			fields: fields{},
+			want:   false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -233,7 +242,11 @@ func TestHoconObject_IsString(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "object is not a string",
+			fields: fields{},
+			want:   false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -258,7 +271,24 @@ func TestHoconObject_Items(t *testing.T) {
 		fields fields
 		want   map[string]*HoconValue
 	}{
-		// TODO: Add test cases.
+		{
+			name: "object returns its values correctly",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+			},
+			want: map[string]*HoconValue{
+				"a": {values: []HoconElement{NewHoconLiteral("b")}},
+				"c": {values: []HoconElement{NewHoconLiteral("d")}},
+			},
+		},
+		{
+			name:   "object returns nil items if it's empty",
+			fields: fields{},
+			want:   nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -287,7 +317,28 @@ func TestHoconObject_Merge(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "object returns its values correctly",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+			},
+			args:    args{other: nil},
+			wantErr: false,
+		},
+		{
+			name: "object returns its values correctly",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+			},
+			args:    args{other: nil},
+			wantErr: false, // todo check result of merging
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
