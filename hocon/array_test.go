@@ -18,31 +18,31 @@ func TestHoconArray_GetArray(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "empty1",
+			name:    "array without array returns nil",
 			fields:  fields{},
 			want:    nil,
 			wantErr: false,
 		},
 		{
-			name:    "empty2",
+			name:    "array with empty nested array return empty array",
 			fields:  fields{values: []*HoconValue{}},
 			want:    []*HoconValue{},
 			wantErr: false,
 		},
 		{
-			name:    "empty3",
+			name:    "array with no elements returns nested array with no elements",
 			fields:  fields{values: []*HoconValue{{}}},
 			want:    []*HoconValue{{}},
 			wantErr: false,
 		},
 		{
-			name:    "empty4",
+			name:    "array with empty element returns empty element",
 			fields:  fields{values: []*HoconValue{{values: []HoconElement{}}}},
 			want:    []*HoconValue{{values: []HoconElement{}}},
 			wantErr: false,
 		},
 		{
-			name:    "simple",
+			name:    "array with values return its values",
 			fields:  fields{values: []*HoconValue{{values: []HoconElement{NewHoconLiteral("a")}}}},
 			want:    []*HoconValue{{values: []HoconElement{NewHoconLiteral("a")}}},
 			wantErr: false,
@@ -75,7 +75,7 @@ func TestHoconArray_GetString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{name: "simple", fields: fields{}, want: "", wantErr: true},
+		{name: "array cannot return a string", fields: fields{}, want: "", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestHoconArray_IsArray(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		{name: "simple", fields: fields{}, want: true},
+		{name: "array is array", fields: fields{}, want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -126,7 +126,7 @@ func TestHoconArray_IsString(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		{name: "simple", fields: fields{}, want: false},
+		{name: "array is not a string", fields: fields{}, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -149,30 +149,33 @@ func TestHoconArray_String(t *testing.T) {
 		fields fields
 		want   string
 	}{
-		{name: "empty1", fields: fields{}, want: "[]"},
-		{name: "empty2", fields: fields{values: []*HoconValue{}}, want: "[]"},
-		{name: "empty3", fields: fields{values: []*HoconValue{{}}}, want: "[]"},
-		{name: "empty4", fields: fields{values: []*HoconValue{{values: []HoconElement{}}}}, want: "[]"},
+		{name: "empty array returns empty brackets", fields: fields{}, want: "[]"},
+		{name: "array with no elements returns empty brackets", fields: fields{values: []*HoconValue{}}, want: "[]"},
+		{name: "array with empty element returns empty brackets", fields: fields{values: []*HoconValue{{}}}, want: "[]"},
 		{
-			name:   "simple",
+			name:   "array with element with empty value returns empty brackets",
+			fields: fields{values: []*HoconValue{{values: []HoconElement{}}}},
+			want:   "[]",
+		}, {
+			name:   "array returns its text elements in brackets",
 			fields: fields{values: []*HoconValue{{values: []HoconElement{NewHoconLiteral("a")}}}},
 			want:   "[a]",
 		},
-		//{
-		//	name:   "array",
-		//	fields: fields{values: []*HoconValue{{values: []HoconElement{NewHoconLiteral("a"),NewHoconLiteral("b")}}}},
-		//	want:   "[a,b]",
-		//}, todo fix
 		{
-			name: "objects",
+			name: "array returns its text elements divided by comma",
+			fields: fields{values: []*HoconValue{
+				{values: []HoconElement{NewHoconLiteral("a")}},
+				{values: []HoconElement{NewHoconLiteral("b")}},
+				{values: []HoconElement{NewHoconLiteral("1")}},
+			}},
+			want: "[a,b,1]",
+		},
+		{
+			name: "array returns its object elements divided by comma",
 			fields: fields{
 				values: []*HoconValue{
-					{
-						values: []HoconElement{makeHoconObject([]string{"a", "c"}, []string{"b", "d"})},
-					},
-					{
-						values: []HoconElement{makeHoconObject([]string{"e"}, []string{"f"})},
-					},
+					{values: []HoconElement{makeHoconObject([]string{"a", "c"}, []string{"b", "d"})}},
+					{values: []HoconElement{makeHoconObject([]string{"e"}, []string{"f"})}},
 				},
 			},
 			want: "[{" + newLine + "  a : b" + newLine + "  c : d" + newLine + "},{" + newLine + "  e : f" + newLine + "}]",
@@ -196,7 +199,7 @@ func TestNewHoconArray(t *testing.T) {
 		name string
 		want *HoconArray
 	}{
-		{name: "simple", want: &HoconArray{}},
+		{name: "NewHoconArray returns an empty array", want: &HoconArray{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

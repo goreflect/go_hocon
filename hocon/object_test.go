@@ -178,12 +178,7 @@ func TestHoconObject_GetString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{
-			name:    "object can not return a string",
-			fields:  fields{},
-			want:    "",
-			wantErr: true,
-		},
+		{name: "object can not return a string", fields: fields{}, want: "", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -213,11 +208,7 @@ func TestHoconObject_IsArray(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		{
-			name:   "object is not an array",
-			fields: fields{},
-			want:   false,
-		},
+		{name: "object is not an array", fields: fields{}, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -242,11 +233,7 @@ func TestHoconObject_IsString(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		{
-			name:   "object is not a string",
-			fields: fields{},
-			want:   false,
-		},
+		{name: "object is not a string", fields: fields{}, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -315,29 +302,47 @@ func TestHoconObject_Merge(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
+		want    *HoconObject
 		wantErr bool
 	}{
 		{
-			name: "object returns its values correctly",
+			name: "object merges with nil correctly",
 			fields: fields{
 				items: map[string]*HoconValue{
 					"a": {values: []HoconElement{NewHoconLiteral("b")}},
 					"c": {values: []HoconElement{NewHoconLiteral("d")}},
 				},
+				keys: []string{"a", "c"},
 			},
 			args:    args{other: nil},
+			want:    makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
 			wantErr: false,
 		},
 		{
-			name: "object returns its values correctly",
+			name: "object merges with empty object correctly",
 			fields: fields{
 				items: map[string]*HoconValue{
 					"a": {values: []HoconElement{NewHoconLiteral("b")}},
 					"c": {values: []HoconElement{NewHoconLiteral("d")}},
 				},
+				keys: []string{"a", "c"},
 			},
-			args:    args{other: nil},
-			wantErr: false, // todo check result of merging
+			args:    args{other: makeHoconObject([]string{}, []string{})},
+			want:    makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
+			wantErr: false,
+		},
+		{
+			name: "object merges with other correctly",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+				keys: []string{"a", "c"},
+			},
+			args:    args{other: makeHoconObject([]string{"e"}, []string{"f"})},
+			want:    makeHoconObject([]string{"a", "c", "e"}, []string{"b", "d", "f"}),
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -349,6 +354,10 @@ func TestHoconObject_Merge(t *testing.T) {
 			if err := p.Merge(tt.args.other); (err != nil) != tt.wantErr {
 				t.Errorf("Merge() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			if !reflect.DeepEqual(p, tt.want) {
+				t.Errorf("Merge() got = %v, want %v", p, tt.want)
+			}
+
 		})
 	}
 }
@@ -368,7 +377,69 @@ func TestHoconObject_MergeImmutable(t *testing.T) {
 		want    *HoconObject
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "object merges with nil correctly",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+				keys: []string{"a", "c"},
+			},
+			args:    args{other: nil},
+			want:    makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
+			wantErr: false,
+		},
+		{
+			name: "object merges with empty object correctly",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+				keys: []string{"a", "c"},
+			},
+			args:    args{other: makeHoconObject([]string{}, []string{})},
+			want:    makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
+			wantErr: false,
+		},
+		{
+			name: "object merges with other correctly",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+				keys: []string{"a", "c"},
+			},
+			args:    args{other: makeHoconObject([]string{"e"}, []string{"f"})},
+			want:    makeHoconObject([]string{"a", "c", "e"}, []string{"b", "d", "f"}),
+			wantErr: false,
+		},
+		{
+			name: "object with nested objects merges with other correctly",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{makeHoconObject([]string{"a1"}, []string{"a2"})}},
+				},
+				keys: []string{"a"},
+			},
+			args: args{
+				other: &HoconObject{
+					keys:  []string{"a"},
+					items: map[string]*HoconValue{"a": {values: []HoconElement{makeHoconObject([]string{"b1"}, []string{"b2"})}}},
+				},
+			},
+			want: &HoconObject{
+				keys: []string{"a"},
+				items: map[string]*HoconValue{"a": {
+					values: []HoconElement{
+						makeHoconObject([]string{"a1", "b1"}, []string{"a2", "b2"}),
+					},
+				}},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
