@@ -469,7 +469,32 @@ func TestHoconObject_String(t *testing.T) {
 		fields fields
 		want   string
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "empty object returns empty string",
+			fields: fields{},
+			want:   "",
+		},
+		{
+			name: "object returns its fields with values",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+				keys: []string{"a", "c"},
+			},
+			want: "a : b" + newLine + "c : d" + newLine,
+		},
+		{
+			name: "object returns nested objects in brackets",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{makeHoconObject([]string{"a1"}, []string{"a2"})}},
+				},
+				keys: []string{"a"},
+			},
+			want: "a : {" + newLine + "  a1 : a2" + newLine + "}" + newLine,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -499,7 +524,61 @@ func TestHoconObject_ToString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "empty object returns empty string",
+			fields: fields{},
+			want:   "",
+		},
+		{
+			name:   "empty object with non 0 indent returns empty string",
+			fields: fields{},
+			args:   args{indent: 1},
+			want:   "",
+		},
+		{
+			name: "object returns its fields with values",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+				keys: []string{"a", "c"},
+			},
+			want: "a : b" + newLine + "c : d" + newLine,
+		},
+		{
+			name: "object with non 0 indent returns its fields with values",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+				keys: []string{"a", "c"},
+			},
+			args: args{indent: 2},
+			want: "    a : b" + newLine + "    c : d" + newLine,
+		},
+		{
+			name: "object returns nested objects in brackets",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{makeHoconObject([]string{"a1"}, []string{"a2"})}},
+				},
+				keys: []string{"a"},
+			},
+			want: "a : {" + newLine + "  a1 : a2" + newLine + "}" + newLine,
+		},
+		{
+			name: "object with non 0 indent returns nested objects in brackets",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{makeHoconObject([]string{"a1"}, []string{"a2"})}},
+				},
+				keys: []string{"a"},
+			},
+			args: args{indent: 3},
+			want: "      a : {" + newLine + "        a1 : a2" + newLine + "      }" + newLine,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -530,7 +609,37 @@ func TestHoconObject_Unwrapped(t *testing.T) {
 		want    map[string]interface{}
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "empty object unwraps as nil",
+			fields: fields{},
+			want:   nil,
+		},
+		{
+			name: "object returns its items",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{NewHoconLiteral("b")}},
+					"c": {values: []HoconElement{NewHoconLiteral("d")}},
+				},
+				keys: []string{"a", "c"},
+			},
+			want: map[string]interface{}{
+				"a": &HoconValue{values: []HoconElement{NewHoconLiteral("b")}},
+				"c": &HoconValue{values: []HoconElement{NewHoconLiteral("d")}},
+			},
+		},
+		{
+			name: "object returns its item with nested object unwrapped",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{makeHoconObject([]string{"a1"}, []string{"a2"})}},
+				},
+				keys: []string{"a"},
+			},
+			want: map[string]interface{}{
+				"a": map[string]interface{}{"a1": &HoconValue{values: []HoconElement{NewHoconLiteral("a2")}}},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -550,41 +659,15 @@ func TestHoconObject_Unwrapped(t *testing.T) {
 	}
 }
 
-func TestHoconObject_quoteIfNeeded(t *testing.T) {
-	type fields struct {
-		items map[string]*HoconValue
-		keys  []string
-	}
-	type args struct {
-		text string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &HoconObject{
-				items: tt.fields.items,
-				keys:  tt.fields.keys,
-			}
-			if got := p.quoteIfNeeded(tt.args.text); got != tt.want {
-				t.Errorf("quoteIfNeeded() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestNewHoconObject(t *testing.T) {
 	tests := []struct {
 		name string
 		want *HoconObject
 	}{
-		// TODO: Add test cases.
+		{
+			name: "returns object with empty items and null keys",
+			want: &HoconObject{items: map[string]*HoconValue{}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -213,7 +213,7 @@ func (p *HoconValue) ToString(indent int) (string, error) {
 			return "", err
 		}
 
-		return fmt.Sprintf("{\r\n%s%s}", indentString, stringV), nil
+		return fmt.Sprintf("{\r\n%s%s}", stringV, indentString), nil
 	}
 
 	if p.IsArray() {

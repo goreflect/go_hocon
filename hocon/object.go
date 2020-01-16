@@ -18,19 +18,6 @@ func NewHoconObject() *HoconObject {
 	}
 }
 
-// makeHoconObject creates object with text values for test purposes
-func makeHoconObject(keys []string, values []string) *HoconObject {
-	items := make(map[string]*HoconValue)
-	for k, v := range keys {
-		items[v] = &HoconValue{values: []HoconElement{NewHoconLiteral(values[k])}}
-	}
-
-	return &HoconObject{
-		keys:  keys,
-		items: items,
-	}
-}
-
 func (p *HoconObject) GetString() (string, error) {
 	return "", errors.New("this element is an object and not a string")
 }
@@ -117,7 +104,7 @@ func (p *HoconObject) ToString(indent int) (string, error) {
 	tmp := strings.Repeat(" ", indent*2)
 	buf := bytes.NewBuffer(nil)
 	for _, k := range p.keys {
-		key := p.quoteIfNeeded(k)
+		key := quoteStringIfNeeded(k)
 		v := p.items[key]
 
 		str, err := v.ToString(indent)
@@ -178,12 +165,4 @@ func (p *HoconObject) MergeImmutable(other *HoconObject) (*HoconObject, error) {
 	}
 
 	return &newObject, nil
-}
-
-func (p *HoconObject) quoteIfNeeded(text string) string {
-	if strings.IndexByte(text, ' ') >= 0 ||
-		strings.IndexByte(text, '\t') >= 0 {
-		return "\"" + text + "\""
-	}
-	return text
 }
