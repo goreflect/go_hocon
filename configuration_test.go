@@ -18,11 +18,17 @@ func TestParseKeyOrder(t *testing.T) {
 		}()
 
 		for i := 0; i < 1000; i++ {
-			conf := LoadConfig("tests/configs.conf")
+			conf, err1 := LoadConfig("tests/configs.conf")
+			if err1 != nil {
+				t.Error(err1)
+			}
 			for g := 1; g < 3; g++ {
 				for i := 1; i < 4; i++ {
 					key := fmt.Sprintf("test.out.a.b.c.d.groups.g%d.o%d.order", g, i)
-					order := conf.GetInt32(key, -1)
+					order, err2 := conf.GetInt32(key, -1)
+					if err2 != nil {
+						t.Error(err2)
+					}
 
 					if order != int32(i) {
 						fmt.Println(conf)
