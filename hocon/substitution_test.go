@@ -24,11 +24,16 @@ var (
 	}
 
 	simpleLiteral = NewHoconLiteral("a")
+
+	simpleNestedObject = &HoconObject{
+		keys:  []string{"a"},
+		items: map[string]*HoconValue{"a": {values: []HoconElement{simpleObject}}},
+	}
 )
 
 func TestHoconSubstitution_GetArray(t *testing.T) {
-	cycleSubstitution := &HoconSubstitution{}
-	cycleSubstitution.ResolvedValue = &HoconValue{values: []HoconElement{cycleSubstitution}}
+	cycledSubstitution := &HoconSubstitution{}
+	cycledSubstitution.ResolvedValue = &HoconValue{values: []HoconElement{cycledSubstitution}}
 
 	type fields struct {
 		Path          string
@@ -86,7 +91,7 @@ func TestHoconSubstitution_GetArray(t *testing.T) {
 		{
 			name: "returns nil if contains cycled reference",
 			fields: fields{
-				ResolvedValue: cycleSubstitution.ResolvedValue,
+				ResolvedValue: cycledSubstitution.ResolvedValue,
 			},
 			want: nil,
 		},
@@ -112,8 +117,8 @@ func TestHoconSubstitution_GetArray(t *testing.T) {
 }
 
 func TestHoconSubstitution_GetObject(t *testing.T) {
-	cycleSubstitution := &HoconSubstitution{}
-	cycleSubstitution.ResolvedValue = &HoconValue{values: []HoconElement{cycleSubstitution}}
+	cycledSubstitution := &HoconSubstitution{}
+	cycledSubstitution.ResolvedValue = &HoconValue{values: []HoconElement{cycledSubstitution}}
 
 	type fields struct {
 		Path          string
@@ -158,7 +163,7 @@ func TestHoconSubstitution_GetObject(t *testing.T) {
 		{
 			name: "fails if contains cycled reference",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{cycleSubstitution}},
+				ResolvedValue: &HoconValue{values: []HoconElement{cycledSubstitution}},
 			},
 			wantErr: true,
 		},
@@ -342,7 +347,7 @@ func TestHoconSubstitution_IsObject(t *testing.T) {
 				IsOptional:    tt.fields.IsOptional,
 				OriginalPath:  tt.fields.OriginalPath,
 			}
-			if got := p.IsObject(); got != tt.want {
+			if got, _ := p.IsObject(); got != tt.want {
 				t.Errorf("IsObject() = %v, want %v", got, tt.want)
 			}
 		})
@@ -406,8 +411,8 @@ func TestHoconSubstitution_IsString(t *testing.T) {
 }
 
 func TestHoconSubstitution_checkCycleRef(t *testing.T) {
-	cycleSubstitution := &HoconSubstitution{}
-	cycleSubstitution.ResolvedValue = &HoconValue{values: []HoconElement{cycleSubstitution}}
+	cycledSubstitution := &HoconSubstitution{}
+	cycledSubstitution.ResolvedValue = &HoconValue{values: []HoconElement{cycledSubstitution}}
 
 	type fields struct {
 		Path          string
@@ -430,7 +435,7 @@ func TestHoconSubstitution_checkCycleRef(t *testing.T) {
 		{
 			name: "returns true if contains substitution with cycle reference",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{cycleSubstitution}},
+				ResolvedValue: &HoconValue{values: []HoconElement{cycledSubstitution}},
 			},
 			wantErr: true,
 		},

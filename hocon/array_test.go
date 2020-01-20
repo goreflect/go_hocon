@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-const newLine string = "\r\n"
-
 func TestHoconArray_GetArray(t *testing.T) {
 	type fields struct {
 		values []*HoconValue

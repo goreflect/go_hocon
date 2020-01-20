@@ -63,11 +63,14 @@ func (p *Parser) parseText(text string, callback IncludeCallback) (*HoconRoot, e
 }
 
 func (p *Parser) parseObject(owner *HoconValue, root bool, currentPath string) error {
-	if !owner.IsObject() {
-		owner.NewValue(NewHoconObject())
+	isObject, err2 := owner.IsObject()
+	if err2 != nil {
+		return err2
 	}
 
-	if owner.IsObject() {
+	if !isObject {
+		owner.NewValue(NewHoconObject())
+	} else {
 		rootObj := owner
 		for rootObj.oldValue != nil {
 			oldObj, err := rootObj.oldValue.GetObject()
@@ -158,14 +161,24 @@ func (p *Parser) parseKeyContent(value *HoconValue, currentPath string) error {
 			return p.parseObject(value, false, currentPath)
 		case TokenTypeAssign:
 			{
-				if !value.IsObject() {
+				isObject, err := value.IsObject()
+				if err != nil {
+					return err
+				}
+
+				if !isObject {
 					value.Clear()
 				}
 			}
 			return p.ParseValue(value, false, currentPath)
 		case TokenTypePlusAssign:
 			{
-				if !value.IsObject() {
+				isObject, err := value.IsObject()
+				if err != nil {
+					return err
+				}
+
+				if !isObject {
 					value.Clear()
 				}
 			}
@@ -201,7 +214,12 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 		switch t.tokenType {
 		case TokenTypeEoF:
 		case TokenTypeLiteralValue:
-			if owner.IsObject() {
+			isObject, err := owner.IsObject()
+			if err != nil {
+				return err
+			}
+
+			if isObject {
 				owner.Clear()
 			}
 			lit := NewHoconLiteral(t.value)

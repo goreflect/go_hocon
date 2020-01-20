@@ -51,12 +51,12 @@ func (p *HoconSubstitution) GetArray() ([]*HoconValue, error) {
 	return p.ResolvedValue.GetArray()
 }
 
-func (p *HoconSubstitution) IsObject() bool {
+func (p *HoconSubstitution) IsObject() (bool, error) {
 	if p.ResolvedValue == nil {
-		return false
+		return false, nil
 	}
 	if err := p.checkCycleRef(); err != nil {
-		return false
+		return false, err
 	}
 	return p.ResolvedValue.IsObject()
 }

@@ -392,10 +392,10 @@ func (p *Config) HasPath(path string) bool {
 	return node != nil
 }
 
-func (p *Config) IsObject(path string) bool {
+func (p *Config) IsObject(path string) (bool, error) {
 	node, err := p.GetNode(path)
 	if err != nil || node == nil {
-		return false
+		return false, nil
 	}
 
 	return node.IsObject()

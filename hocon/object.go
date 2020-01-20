@@ -111,7 +111,7 @@ func (p *HoconObject) ToString(indent int) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		buf.WriteString(fmt.Sprintf("%s%s : %s\r\n", tmp, key, str))
+		buf.WriteString(fmt.Sprintf("%s%s : %s%s", tmp, key, str, newLine))
 	}
 	return buf.String(), nil
 }
@@ -130,7 +130,17 @@ func (p *HoconObject) Merge(other *HoconObject) error {
 		otherValue := otherItems[otherKey]
 
 		if thisValue, exist := thisValues[otherKey]; exist {
-			if thisValue.IsObject() && otherValue.IsObject() {
+			isThisObject, err1 := thisValue.IsObject()
+			if err1 != nil {
+				return err1
+			}
+
+			isOtherObject, err2 := otherValue.IsObject()
+			if err2 != nil {
+				return err2
+			}
+
+			if isThisObject && isOtherObject {
 				thisValueObject, err := thisValue.GetObject()
 				if err != nil {
 					return err

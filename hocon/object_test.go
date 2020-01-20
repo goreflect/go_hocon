@@ -5,6 +5,21 @@ import (
 	"testing"
 )
 
+const cannotGetStringError string = "cannot get string: cycle reference in path of "
+
+func getCycledElement() *HoconSubstitution {
+	cycledSubstitution := &HoconSubstitution{}
+	cycledSubstitution.ResolvedValue = &HoconValue{values: []HoconElement{cycledSubstitution}}
+	return cycledSubstitution
+}
+
+func getCycledObject() *HoconObject {
+	return &HoconObject{
+		keys:  []string{"a"},
+		items: map[string]*HoconValue{"a": {values: []HoconElement{getCycledElement()}}},
+	}
+}
+
 func TestHoconObject_GetArray(t *testing.T) {
 	type fields struct {
 		items map[string]*HoconValue
@@ -344,6 +359,37 @@ func TestHoconObject_Merge(t *testing.T) {
 			want:    makeHoconObject([]string{"a", "c", "e"}, []string{"b", "d", "f"}),
 			wantErr: false,
 		},
+		{
+			name: "fails to merge cycled object",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{getCycledElement()}},
+				},
+				keys: []string{"a"},
+			},
+			args:    args{other: simpleObject},
+			wantErr: true,
+		},
+		{
+			name: "fails to merge with cycled object",
+			fields: fields{
+				items: map[string]*HoconValue{"a": {values: []HoconElement{simpleLiteral}}},
+				keys:  []string{"a"},
+			},
+			args:    args{other: getCycledObject()},
+			wantErr: true,
+		},
+		//{
+		//	name: "fails to merge nested cycled object",
+		//	fields: fields{
+		//		items: map[string]*HoconValue{
+		//			"a": {values: []HoconElement{getCycledObject()}},
+		//		},
+		//		keys: []string{"a"},
+		//	},
+		//	args:    args{other: simpleNestedObject},
+		//	wantErr: true,
+		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -351,13 +397,17 @@ func TestHoconObject_Merge(t *testing.T) {
 				items: tt.fields.items,
 				keys:  tt.fields.keys,
 			}
-			if err := p.Merge(tt.args.other); (err != nil) != tt.wantErr {
+
+			err := p.Merge(tt.args.other)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("Merge() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(p, tt.want) {
-				t.Errorf("Merge() got = %v, want %v", p, tt.want)
-			}
 
+			if err == nil {
+				if !reflect.DeepEqual(p, tt.want) {
+					t.Errorf("Merge() got = %v, want %v", p, tt.want)
+				}
+			}
 		})
 	}
 }
@@ -494,6 +544,16 @@ func TestHoconObject_String(t *testing.T) {
 				keys: []string{"a"},
 			},
 			want: "a : {" + newLine + "  a1 : a2" + newLine + "}" + newLine,
+		},
+		{
+			name: "fails with cycled object",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{getCycledElement()}},
+				},
+				keys: []string{"a"},
+			},
+			want: cannotGetStringError,
 		},
 	}
 	for _, tt := range tests {
@@ -639,6 +699,32 @@ func TestHoconObject_Unwrapped(t *testing.T) {
 			want: map[string]interface{}{
 				"a": map[string]interface{}{"a1": &HoconValue{values: []HoconElement{NewHoconLiteral("a2")}}},
 			},
+		},
+		{
+			name: "fails with cycled object",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{getCycledElement()}},
+				},
+				keys: []string{"a"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "fails to merge with nested cycled object",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {
+						values: []HoconElement{
+							&HoconSubstitution{
+								ResolvedValue: &HoconValue{values: []HoconElement{getCycledObject()}},
+							},
+						},
+					},
+				},
+				keys: []string{"a"},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
