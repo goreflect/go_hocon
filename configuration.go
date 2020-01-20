@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/artemkaxboy/configuration/hocon"
+	"github.com/goreflect/go_hocon/hocon"
 )
 
 func ParseString(text string, includeCallback ...hocon.IncludeCallback) (*Config, error) {

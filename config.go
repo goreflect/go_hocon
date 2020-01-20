@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/artemkaxboy/configuration/hocon"
+	"github.com/goreflect/go_hocon/hocon"
 )
 
 type Config struct {
