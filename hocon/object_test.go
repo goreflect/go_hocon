@@ -329,9 +329,8 @@ func TestHoconObject_Merge(t *testing.T) {
 				},
 				keys: []string{"a", "c"},
 			},
-			args:    args{other: nil},
-			want:    makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
-			wantErr: false,
+			args: args{other: nil},
+			want: makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
 		},
 		{
 			name: "object merges with empty object correctly",
@@ -342,9 +341,8 @@ func TestHoconObject_Merge(t *testing.T) {
 				},
 				keys: []string{"a", "c"},
 			},
-			args:    args{other: makeHoconObject([]string{}, []string{})},
-			want:    makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
-			wantErr: false,
+			args: args{other: makeHoconObject([]string{}, []string{})},
+			want: makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
 		},
 		{
 			name: "object merges with other correctly",
@@ -355,9 +353,8 @@ func TestHoconObject_Merge(t *testing.T) {
 				},
 				keys: []string{"a", "c"},
 			},
-			args:    args{other: makeHoconObject([]string{"e"}, []string{"f"})},
-			want:    makeHoconObject([]string{"a", "c", "e"}, []string{"b", "d", "f"}),
-			wantErr: false,
+			args: args{other: makeHoconObject([]string{"e"}, []string{"f"})},
+			want: makeHoconObject([]string{"a", "c", "e"}, []string{"b", "d", "f"}),
 		},
 		{
 			name: "fails to merge cycled object",
@@ -379,17 +376,19 @@ func TestHoconObject_Merge(t *testing.T) {
 			args:    args{other: getCycledObject()},
 			wantErr: true,
 		},
-		//{
-		//	name: "fails to merge nested cycled object",
-		//	fields: fields{
-		//		items: map[string]*HoconValue{
-		//			"a": {values: []HoconElement{getCycledObject()}},
-		//		},
-		//		keys: []string{"a"},
-		//	},
-		//	args:    args{other: simpleNestedObject},
-		//	wantErr: true,
-		//},
+		{
+			name: "fails to merge nested cycled object",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {
+						values: []HoconElement{getCycledObject()},
+					},
+				},
+				keys: []string{"a"},
+			},
+			args:    args{other: simpleNestedObject},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -436,9 +435,8 @@ func TestHoconObject_MergeImmutable(t *testing.T) {
 				},
 				keys: []string{"a", "c"},
 			},
-			args:    args{other: nil},
-			want:    makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
-			wantErr: false,
+			args: args{other: nil},
+			want: makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
 		},
 		{
 			name: "object merges with empty object correctly",
@@ -449,9 +447,8 @@ func TestHoconObject_MergeImmutable(t *testing.T) {
 				},
 				keys: []string{"a", "c"},
 			},
-			args:    args{other: makeHoconObject([]string{}, []string{})},
-			want:    makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
-			wantErr: false,
+			args: args{other: makeHoconObject([]string{}, []string{})},
+			want: makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
 		},
 		{
 			name: "object merges with other correctly",
@@ -462,9 +459,8 @@ func TestHoconObject_MergeImmutable(t *testing.T) {
 				},
 				keys: []string{"a", "c"},
 			},
-			args:    args{other: makeHoconObject([]string{"e"}, []string{"f"})},
-			want:    makeHoconObject([]string{"a", "c", "e"}, []string{"b", "d", "f"}),
-			wantErr: false,
+			args: args{other: makeHoconObject([]string{"e"}, []string{"f"})},
+			want: makeHoconObject([]string{"a", "c", "e"}, []string{"b", "d", "f"}),
 		},
 		{
 			name: "object with nested objects merges with other correctly",
@@ -488,7 +484,19 @@ func TestHoconObject_MergeImmutable(t *testing.T) {
 					},
 				}},
 			},
-			wantErr: false,
+		},
+		{
+			name: "merge cycled object fails",
+			fields: fields{
+				items: map[string]*HoconValue{
+					"a": {values: []HoconElement{getCycledElement()}},
+				},
+				keys: []string{"a"},
+			},
+			args: args{
+				other: simpleObject,
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
