@@ -7,19 +7,6 @@ import (
 
 const cannotGetStringError string = "cannot get string: cycle reference in path of "
 
-func getCycledElement() *HoconSubstitution {
-	cycledSubstitution := &HoconSubstitution{}
-	cycledSubstitution.ResolvedValue = &HoconValue{values: []HoconElement{cycledSubstitution}}
-	return cycledSubstitution
-}
-
-func getCycledObject() *HoconObject {
-	return &HoconObject{
-		keys:  []string{"a"},
-		items: map[string]*HoconValue{"a": {values: []HoconElement{getCycledElement()}}},
-	}
-}
-
 func TestHoconObject_GetArray(t *testing.T) {
 	type fields struct {
 		items map[string]*HoconValue
@@ -31,7 +18,10 @@ func TestHoconObject_GetArray(t *testing.T) {
 		want    []*HoconValue
 		wantErr bool
 	}{
-		{name: "object can not return an array", fields: fields{}, want: nil, wantErr: true},
+		{
+			name:    "can not return an array",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -66,16 +56,25 @@ func TestHoconObject_GetKey(t *testing.T) {
 		want   *HoconValue
 	}{
 		{
-			name: "object returns correct value by key",
+			name: "returns correct value by key",
 			fields: fields{
-				items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}},
+				items: map[string]*HoconValue{"a": wrapInValue(NewHoconLiteral("b"))},
 				keys:  []string{"a"},
 			},
 			args: args{key: "a"},
-			want: &HoconValue{values: []HoconElement{NewHoconLiteral("b")}},
+			want: wrapInValue(NewHoconLiteral("b")),
 		},
 		{
-			name:   "object returns nil by unknown key",
+			name: "returns nil by unknown key",
+			fields: fields{
+				items: map[string]*HoconValue{"a": wrapInValue(NewHoconLiteral("b"))},
+				keys:  []string{"a"},
+			},
+			args: args{key: "c"},
+			want: nil,
+		},
+		{
+			name:   "returns nil out of nil key/value",
 			fields: fields{},
 			args:   args{key: "a"},
 			want:   nil,
@@ -105,14 +104,21 @@ func TestHoconObject_GetKeys(t *testing.T) {
 		want   []string
 	}{
 		{
-			name: "object returns existed keys correctly",
+			name: "returns existed keys correctly",
 			fields: fields{
-				keys: []string{"a", "c", "d"},
+				keys: []string{"a", "b", "c"},
 			},
-			want: []string{"a", "c", "d"},
+			want: []string{"a", "b", "c"},
 		},
 		{
-			name:   "empty object returns nil instead of keys", // todo maybe should return empty list
+			name: "returns empty slice correctly",
+			fields: fields{
+				keys: []string{},
+			},
+			want: []string{},
+		},
+		{
+			name:   "returns nil instead of keys", // todo maybe should return empty list
 			fields: fields{},
 			want:   nil,
 		},
@@ -145,18 +151,18 @@ func TestHoconObject_GetOrCreateKey(t *testing.T) {
 		want   *HoconValue
 	}{
 		{
-			name: "object returns current value as oldValue",
+			name: "returns current value as oldValue",
 			fields: fields{
-				items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}},
+				items: map[string]*HoconValue{"a": wrapInValue(NewHoconLiteral("b"))},
 				keys:  []string{"a"},
 			},
 			args: args{key: "a"},
-			want: &HoconValue{oldValue: &HoconValue{values: []HoconElement{NewHoconLiteral("b")}}},
+			want: &HoconValue{oldValue: wrapInValue(NewHoconLiteral("b"))},
 		},
 		{
 			name: "object returns empty value if it didn't exist",
 			fields: fields{
-				items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}},
+				items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}}, //todo continue here
 				keys:  []string{"a"},
 			},
 			args: args{key: "b"},
@@ -306,6 +312,8 @@ func TestHoconObject_Items(t *testing.T) {
 }
 
 func TestHoconObject_Merge(t *testing.T) {
+	simpleObjectKey := simpleObject.keys[0]
+
 	type fields struct {
 		items map[string]*HoconValue
 		keys  []string
@@ -357,12 +365,12 @@ func TestHoconObject_Merge(t *testing.T) {
 			want: makeHoconObject([]string{"a", "c", "e"}, []string{"b", "d", "f"}),
 		},
 		{
-			name: "fails to merge cycled object",
+			name: "fails to merge cycled object with the same key",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{getCycledElement()}},
+					simpleObjectKey: {values: []HoconElement{getCycledSubstitution()}},
 				},
-				keys: []string{"a"},
+				keys: []string{simpleObjectKey},
 			},
 			args:    args{other: simpleObject},
 			wantErr: true,
@@ -373,15 +381,15 @@ func TestHoconObject_Merge(t *testing.T) {
 				items: map[string]*HoconValue{"a": {values: []HoconElement{simpleLiteral}}},
 				keys:  []string{"a"},
 			},
-			args:    args{other: getCycledObject()},
+			args:    args{other: wrapInObject("a", getCycledSubstitution())},
 			wantErr: true,
 		},
 		{
-			name: "fails to merge nested cycled object",
+			name: "fails to merge nested cycled object with the same key",
 			fields: fields{
 				items: map[string]*HoconValue{
 					"a": {
-						values: []HoconElement{getCycledObject()},
+						values: []HoconElement{wrapInObject(simpleObjectKey, getCycledSubstitution())},
 					},
 				},
 				keys: []string{"a"},
@@ -412,6 +420,8 @@ func TestHoconObject_Merge(t *testing.T) {
 }
 
 func TestHoconObject_MergeImmutable(t *testing.T) {
+	simpleObjectKey := simpleObject.keys[0]
+
 	type fields struct {
 		items map[string]*HoconValue
 		keys  []string
@@ -486,12 +496,12 @@ func TestHoconObject_MergeImmutable(t *testing.T) {
 			},
 		},
 		{
-			name: "merge cycled object fails",
+			name: "merge cycled object with same key fails",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{getCycledElement()}},
+					simpleObjectKey: {values: []HoconElement{getCycledSubstitution()}},
 				},
-				keys: []string{"a"},
+				keys: []string{simpleObjectKey},
 			},
 			args: args{
 				other: simpleObject,
@@ -557,7 +567,7 @@ func TestHoconObject_String(t *testing.T) {
 			name: "fails with cycled object",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{getCycledElement()}},
+					"a": {values: []HoconElement{getCycledSubstitution()}},
 				},
 				keys: []string{"a"},
 			},
@@ -712,7 +722,7 @@ func TestHoconObject_Unwrapped(t *testing.T) {
 			name: "fails with cycled object",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{getCycledElement()}},
+					"a": {values: []HoconElement{getCycledSubstitution()}},
 				},
 				keys: []string{"a"},
 			},

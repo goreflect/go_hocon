@@ -5,32 +5,6 @@ import (
 	"testing"
 )
 
-var (
-	simpleArray = &HoconArray{values: []*HoconValue{
-		{values: []HoconElement{NewHoconLiteral("a")}},
-		{values: []HoconElement{NewHoconLiteral("b")}},
-	}}
-
-	simpleArray2 = &HoconArray{values: []*HoconValue{
-		{
-			values:   []HoconElement{NewHoconLiteral("current")},
-			oldValue: &HoconValue{values: []HoconElement{NewHoconLiteral("old")}},
-		},
-	}}
-
-	simpleObject = &HoconObject{
-		keys:  []string{"a"},
-		items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}},
-	}
-
-	simpleLiteral = NewHoconLiteral("a")
-
-	simpleNestedObject = &HoconObject{
-		keys:  []string{"a"},
-		items: map[string]*HoconValue{"a": {values: []HoconElement{simpleObject}}},
-	}
-)
-
 func TestHoconSubstitution_GetArray(t *testing.T) {
 	cycledSubstitution := &HoconSubstitution{}
 	cycledSubstitution.ResolvedValue = &HoconValue{values: []HoconElement{cycledSubstitution}}
@@ -63,30 +37,30 @@ func TestHoconSubstitution_GetArray(t *testing.T) {
 		{
 			name: "returns nil if it contains an array after another value",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral, simpleArray}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral, simpleTwoValuesArray}},
 			},
-			want: simpleArray.values,
+			want: simpleTwoValuesArray.values,
 		},
 		{
 			name: "returns array if it contains array",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleArray}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleTwoValuesArray}},
 			},
-			want: simpleArray.values,
+			want: simpleTwoValuesArray.values,
 		},
 		{
 			name: "returns merged array if it contains more than one array",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleArray, simpleArray}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleTwoValuesArray, simpleTwoValuesArray}},
 			},
-			want: append(simpleArray.values, simpleArray.values...),
+			want: append(simpleTwoValuesArray.values, simpleTwoValuesArray.values...),
 		},
 		{
 			name: "returns values array only not oldValues",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleArray2}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleArrayWithOldValue}},
 			},
-			want: simpleArray2.values,
+			want: simpleArrayWithOldValue.values,
 		},
 		{
 			name: "returns nil if contains cycled reference",
@@ -245,7 +219,7 @@ func TestHoconSubstitution_GetString(t *testing.T) {
 
 func TestHoconSubstitution_IsArray(t *testing.T) {
 	simpleSubstitution := &HoconSubstitution{
-		ResolvedValue: &HoconValue{values: []HoconElement{simpleArray}},
+		ResolvedValue: &HoconValue{values: []HoconElement{simpleTwoValuesArray}},
 	}
 	wrapperSubstitution := &HoconSubstitution{
 		ResolvedValue: &HoconValue{values: []HoconElement{simpleSubstitution}},
@@ -264,7 +238,7 @@ func TestHoconSubstitution_IsArray(t *testing.T) {
 		{
 			name: "returns true if contains array",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleArray}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleTwoValuesArray}},
 			},
 			want: true,
 		},
@@ -465,7 +439,6 @@ func TestHoconSubstitution_hasCycleRef(t *testing.T) {
 	type args struct {
 		dup   map[HoconElement]int
 		level int
-		v     interface{}
 	}
 	tests := []struct {
 		name   string
@@ -473,7 +446,16 @@ func TestHoconSubstitution_hasCycleRef(t *testing.T) {
 		args   args
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "returns true if has direct cycled reference",
+			fields: fields{
+				ResolvedValue: getCycledSubstitutionValue(),
+			},
+			args: args{
+				dup: map[HoconElement]int{},
+			},
+			want: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -483,7 +465,7 @@ func TestHoconSubstitution_hasCycleRef(t *testing.T) {
 				IsOptional:    tt.fields.IsOptional,
 				OriginalPath:  tt.fields.OriginalPath,
 			}
-			if got := p.hasCycleRef(tt.args.dup, tt.args.level, tt.args.v); got != tt.want {
+			if got := p.hasCycleRef(tt.args.dup, tt.args.level); got != tt.want {
 				t.Errorf("hasCycleRef() = %v, want %v", got, tt.want)
 			}
 		})
