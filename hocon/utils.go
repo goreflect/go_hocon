@@ -5,7 +5,10 @@ import (
 )
 
 const (
-	newLine string = "\r\n"
+	newLine    = "\r\n"
+	simpleKey1 = "key1"
+	simpleKey2 = "key2"
+	simpleKey3 = "key3"
 )
 
 var (
@@ -24,13 +27,26 @@ var (
 	//	items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}},
 	//}
 
-	simpleLiteral = NewHoconLiteral("a")
+	simpleLiteral1 = NewHoconLiteral("value1")
+	simpleLiteral2 = NewHoconLiteral("value2")
+	simpleLiteral3 = NewHoconLiteral("value3")
 
 	simpleNestedObject = &HoconObject{
 		keys:  []string{"a"},
 		items: map[string]*HoconValue{"a": {values: []HoconElement{simpleObject}}},
 	}
 )
+
+func getMapOfTwoSimpleLiterals() map[string]*HoconValue {
+	return map[string]*HoconValue{
+		simpleKey1: wrapInValue(simpleLiteral1),
+		simpleKey2: wrapInValue(simpleLiteral2),
+	}
+}
+
+func getArrayOfTwoSimpleKeys() []string {
+	return []string{simpleKey1, simpleKey2}
+}
 
 // quoteStringIfNeeded wrap text with quotes if it contains a space or tab symbol
 func quoteStringIfNeeded(text string) string {
@@ -48,10 +64,7 @@ func getCycledSubstitution() *HoconSubstitution {
 }
 
 func getCycledObject() *HoconObject {
-	return &HoconObject{
-		keys:  []string{"a"},
-		items: map[string]*HoconValue{"a": {values: []HoconElement{getCycledSubstitution()}}},
-	}
+	return wrapAllInObject([]string{simpleKey1}, []HoconElement{wrapInValue(getCycledSubstitution())})
 }
 
 func getCycledSubstitutionValue() *HoconValue {
@@ -79,6 +92,20 @@ func wrapInObject(key string, element HoconElement) *HoconObject {
 	return &HoconObject{
 		keys:  []string{key},
 		items: map[string]*HoconValue{key: wrapInValue(element)},
+	}
+}
+
+// wrapAllInObject wraps gotten values into HoconObject. It was made for test purposes
+// only. Make sure that size of elements are equal!
+func wrapAllInObject(keys []string, elements []HoconElement) *HoconObject {
+	items := map[string]*HoconValue{}
+	for i, key := range keys {
+		//noinspection GoNilness
+		items[key] = wrapInValue(elements[i])
+	}
+	return &HoconObject{
+		keys:  keys,
+		items: items,
 	}
 }
 

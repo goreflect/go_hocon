@@ -66,10 +66,10 @@ func TestHoconRoot_Value(t *testing.T) {
 		{
 			name: "returns value correctly",
 			fields: fields{
-				value:         &HoconValue{values: []HoconElement{simpleLiteral}},
+				value:         &HoconValue{values: []HoconElement{simpleLiteral1}},
 				substitutions: nil,
 			},
-			want: &HoconValue{values: []HoconElement{simpleLiteral}},
+			want: &HoconValue{values: []HoconElement{simpleLiteral1}},
 		},
 	}
 	for _, tt := range tests {
@@ -102,9 +102,9 @@ func TestNewHoconRoot(t *testing.T) {
 		{
 			name: "returns value correctly",
 			args: args{
-				value: &HoconValue{values: []HoconElement{simpleLiteral}},
+				value: &HoconValue{values: []HoconElement{simpleLiteral1}},
 			},
-			want: &HoconRoot{value: &HoconValue{values: []HoconElement{simpleLiteral}}},
+			want: &HoconRoot{value: &HoconValue{values: []HoconElement{simpleLiteral1}}},
 		},
 		{
 			name: "returns substitutions correctly",

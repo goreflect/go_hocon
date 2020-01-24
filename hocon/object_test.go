@@ -5,7 +5,13 @@ import (
 	"testing"
 )
 
-const cannotGetStringError string = "cannot get string: cycle reference in path of "
+const (
+	cannotGetStringError string = "cannot get string: cycle reference in path of "
+)
+
+var (
+//simpleLiteral1 = NewHoconLiteral("value")
+)
 
 func TestHoconObject_GetArray(t *testing.T) {
 	type fields struct {
@@ -58,25 +64,25 @@ func TestHoconObject_GetKey(t *testing.T) {
 		{
 			name: "returns correct value by key",
 			fields: fields{
-				items: map[string]*HoconValue{"a": wrapInValue(NewHoconLiteral("b"))},
-				keys:  []string{"a"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
-			args: args{key: "a"},
-			want: wrapInValue(NewHoconLiteral("b")),
+			args: args{key: simpleKey1},
+			want: wrapInValue(simpleLiteral1),
 		},
 		{
 			name: "returns nil by unknown key",
 			fields: fields{
-				items: map[string]*HoconValue{"a": wrapInValue(NewHoconLiteral("b"))},
-				keys:  []string{"a"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
-			args: args{key: "c"},
+			args: args{key: simpleKey3},
 			want: nil,
 		},
 		{
 			name:   "returns nil out of nil key/value",
 			fields: fields{},
-			args:   args{key: "a"},
+			args:   args{key: simpleKey1},
 			want:   nil,
 		},
 	}
@@ -106,9 +112,9 @@ func TestHoconObject_GetKeys(t *testing.T) {
 		{
 			name: "returns existed keys correctly",
 			fields: fields{
-				keys: []string{"a", "b", "c"},
+				keys: getArrayOfTwoSimpleKeys(),
 			},
-			want: []string{"a", "b", "c"},
+			want: getArrayOfTwoSimpleKeys(),
 		},
 		{
 			name: "returns empty slice correctly",
@@ -118,9 +124,8 @@ func TestHoconObject_GetKeys(t *testing.T) {
 			want: []string{},
 		},
 		{
-			name:   "returns nil instead of keys", // todo maybe should return empty list
-			fields: fields{},
-			want:   nil,
+			name: "returns nil instead of keys", // todo maybe should return empty list
+			want: nil,
 		},
 	}
 	for _, tt := range tests {
@@ -153,26 +158,25 @@ func TestHoconObject_GetOrCreateKey(t *testing.T) {
 		{
 			name: "returns current value as oldValue",
 			fields: fields{
-				items: map[string]*HoconValue{"a": wrapInValue(NewHoconLiteral("b"))},
-				keys:  []string{"a"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
-			args: args{key: "a"},
-			want: &HoconValue{oldValue: wrapInValue(NewHoconLiteral("b"))},
+			args: args{key: simpleKey1},
+			want: &HoconValue{oldValue: wrapInValue(simpleLiteral1)},
 		},
 		{
-			name: "object returns empty value if it didn't exist",
+			name: "returns empty value if it didn't exist",
 			fields: fields{
-				items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}}, //todo continue here
-				keys:  []string{"a"},
+				items: map[string]*HoconValue{simpleKey1: wrapInValue(simpleLiteral1)},
+				keys:  []string{simpleKey1},
 			},
-			args: args{key: "b"},
+			args: args{key: simpleKey2},
 			want: &HoconValue{},
 		},
 		{
-			name:   "object returns empty value if it didn't have any fields",
-			fields: fields{},
-			args:   args{key: "a"},
-			want:   &HoconValue{},
+			name: "returns empty value if it didn't have any fields",
+			args: args{key: simpleKey1},
+			want: &HoconValue{},
 		},
 	}
 	for _, tt := range tests {
@@ -199,7 +203,10 @@ func TestHoconObject_GetString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{name: "object can not return a string", fields: fields{}, want: "", wantErr: true},
+		{
+			name:    "can not return a string",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -229,7 +236,10 @@ func TestHoconObject_IsArray(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		{name: "object is not an array", fields: fields{}, want: false},
+		{
+			name: "always returns false",
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -254,7 +264,10 @@ func TestHoconObject_IsString(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		{name: "object is not a string", fields: fields{}, want: false},
+		{
+			name: "always returns false",
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -280,22 +293,15 @@ func TestHoconObject_Items(t *testing.T) {
 		want   map[string]*HoconValue
 	}{
 		{
-			name: "object returns its values correctly",
+			name: "returns its values correctly",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
+				items: getMapOfTwoSimpleLiterals(),
 			},
-			want: map[string]*HoconValue{
-				"a": {values: []HoconElement{NewHoconLiteral("b")}},
-				"c": {values: []HoconElement{NewHoconLiteral("d")}},
-			},
+			want: getMapOfTwoSimpleLiterals(),
 		},
 		{
-			name:   "object returns nil items if it's empty",
-			fields: fields{},
-			want:   nil,
+			name: "returns nil items if it's empty",
+			want: nil,
 		},
 	}
 	for _, tt := range tests {
@@ -312,8 +318,6 @@ func TestHoconObject_Items(t *testing.T) {
 }
 
 func TestHoconObject_Merge(t *testing.T) {
-	simpleObjectKey := simpleObject.keys[0]
-
 	type fields struct {
 		items map[string]*HoconValue
 		keys  []string
@@ -329,75 +333,79 @@ func TestHoconObject_Merge(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "object merges with nil correctly",
+			name: "merges with nil correctly",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
-				keys: []string{"a", "c"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
 			args: args{other: nil},
-			want: makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
+			want: wrapAllInObject(
+				getArrayOfTwoSimpleKeys(),
+				[]HoconElement{simpleLiteral1, simpleLiteral2}),
 		},
 		{
-			name: "object merges with empty object correctly",
+			name: "merges with empty object correctly",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
-				keys: []string{"a", "c"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
-			args: args{other: makeHoconObject([]string{}, []string{})},
-			want: makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
+			args: args{other: wrapAllInObject([]string{}, []HoconElement{})},
+			want: wrapAllInObject(
+				getArrayOfTwoSimpleKeys(),
+				[]HoconElement{simpleLiteral1, simpleLiteral2}),
 		},
 		{
-			name: "object merges with other correctly",
+			name: "merges with other correctly",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
-				keys: []string{"a", "c"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
-			args: args{other: makeHoconObject([]string{"e"}, []string{"f"})},
-			want: makeHoconObject([]string{"a", "c", "e"}, []string{"b", "d", "f"}),
+			args: args{
+				other: wrapAllInObject(
+					[]string{simpleKey3},
+					[]HoconElement{simpleLiteral3}),
+			},
+			want: wrapAllInObject(
+				[]string{simpleKey1, simpleKey2, simpleKey3},
+				[]HoconElement{simpleLiteral1, simpleLiteral2, simpleLiteral3}),
 		},
 		{
 			name: "fails to merge cycled object with the same key",
 			fields: fields{
 				items: map[string]*HoconValue{
-					simpleObjectKey: {values: []HoconElement{getCycledSubstitution()}},
+					simpleKey1: wrapInValue(getCycledSubstitution()),
 				},
-				keys: []string{simpleObjectKey},
+				keys: []string{simpleKey1},
 			},
-			args:    args{other: simpleObject},
+			args: args{
+				other: wrapAllInObject(
+					[]string{simpleKey1},
+					[]HoconElement{wrapInValue(simpleLiteral1)}),
+			},
 			wantErr: true,
 		},
 		{
-			name: "fails to merge with cycled object",
+			name: "fails to merge with cycled object with the same key",
 			fields: fields{
-				items: map[string]*HoconValue{"a": {values: []HoconElement{simpleLiteral}}},
-				keys:  []string{"a"},
+				items: map[string]*HoconValue{simpleKey1: wrapInValue(simpleLiteral1)},
+				keys:  []string{simpleKey1},
 			},
-			args:    args{other: wrapInObject("a", getCycledSubstitution())},
+			args:    args{other: wrapInObject(simpleKey1, getCycledSubstitution())},
 			wantErr: true,
 		},
 		{
 			name: "fails to merge nested cycled object with the same key",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {
-						values: []HoconElement{wrapInObject(simpleObjectKey, getCycledSubstitution())},
-					},
+					simpleKey1: wrapInValue(wrapInObject(simpleKey1, getCycledSubstitution())),
 				},
 				keys: []string{"a"},
 			},
-			args:    args{other: simpleNestedObject},
+			args:    args{other: wrapInObject(simpleKey1, wrapInObject(simpleKey1, simpleLiteral1))},
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconObject{
@@ -420,8 +428,6 @@ func TestHoconObject_Merge(t *testing.T) {
 }
 
 func TestHoconObject_MergeImmutable(t *testing.T) {
-	simpleObjectKey := simpleObject.keys[0]
-
 	type fields struct {
 		items map[string]*HoconValue
 		keys  []string
@@ -437,74 +443,67 @@ func TestHoconObject_MergeImmutable(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "object merges with nil correctly",
+			name: "merges with nil correctly",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
-				keys: []string{"a", "c"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
-			args: args{other: nil},
-			want: makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
+			want: wrapAllInObject(
+				getArrayOfTwoSimpleKeys(),
+				[]HoconElement{simpleLiteral1, simpleLiteral2}),
 		},
 		{
-			name: "object merges with empty object correctly",
+			name: "merges with empty object correctly",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
-				keys: []string{"a", "c"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
 			args: args{other: makeHoconObject([]string{}, []string{})},
-			want: makeHoconObject([]string{"a", "c"}, []string{"b", "d"}),
+			want: wrapAllInObject(
+				getArrayOfTwoSimpleKeys(),
+				[]HoconElement{simpleLiteral1, simpleLiteral2}),
 		},
 		{
-			name: "object merges with other correctly",
+			name: "merges with other correctly",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
-				keys: []string{"a", "c"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
-			args: args{other: makeHoconObject([]string{"e"}, []string{"f"})},
-			want: makeHoconObject([]string{"a", "c", "e"}, []string{"b", "d", "f"}),
+			args: args{other: wrapInObject(simpleKey3, simpleLiteral3)},
+			want: wrapAllInObject(
+				[]string{simpleKey1, simpleKey2, simpleKey3},
+				[]HoconElement{simpleLiteral1, simpleLiteral2, simpleLiteral3}),
 		},
 		{
 			name: "object with nested objects merges with other correctly",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{makeHoconObject([]string{"a1"}, []string{"a2"})}},
+					simpleKey1: wrapInValue(wrapInObject(simpleKey2, simpleLiteral2)),
 				},
-				keys: []string{"a"},
+				keys: []string{simpleKey1},
 			},
 			args: args{
-				other: &HoconObject{
-					keys:  []string{"a"},
-					items: map[string]*HoconValue{"a": {values: []HoconElement{makeHoconObject([]string{"b1"}, []string{"b2"})}}},
-				},
+				other: wrapInObject(simpleKey1, wrapInValue(wrapInObject(simpleKey3, simpleLiteral3))),
 			},
 			want: &HoconObject{
-				keys: []string{"a"},
-				items: map[string]*HoconValue{"a": {
-					values: []HoconElement{
-						makeHoconObject([]string{"a1", "b1"}, []string{"a2", "b2"}),
-					},
-				}},
+				keys: []string{simpleKey1},
+				items: map[string]*HoconValue{
+					simpleKey1: wrapInValue(wrapAllInObject(
+						[]string{simpleKey2, simpleKey3},
+						[]HoconElement{simpleLiteral2, simpleLiteral3})),
+				},
 			},
 		},
 		{
 			name: "merge cycled object with same key fails",
 			fields: fields{
 				items: map[string]*HoconValue{
-					simpleObjectKey: {values: []HoconElement{getCycledSubstitution()}},
+					simpleKey1: wrapInValue(getCycledSubstitution()),
 				},
-				keys: []string{simpleObjectKey},
+				keys: []string{simpleKey1},
 			},
 			args: args{
-				other: simpleObject,
+				other: wrapInObject(simpleKey1, simpleLiteral1),
 			},
 			wantErr: true,
 		},
@@ -538,38 +537,37 @@ func TestHoconObject_String(t *testing.T) {
 		want   string
 	}{
 		{
-			name:   "empty object returns empty string",
-			fields: fields{},
-			want:   "",
+			name: "empty object returns empty string",
+			want: "",
 		},
 		{
-			name: "object returns its fields with values",
+			name: "returns its fields with values",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
-				keys: []string{"a", "c"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
-			want: "a : b" + newLine + "c : d" + newLine,
+			want: simpleKey1 + " : " + simpleLiteral1.value + newLine +
+				simpleKey2 + " : " + simpleLiteral2.value + newLine,
 		},
 		{
-			name: "object returns nested objects in brackets",
+			name: "returns nested objects in brackets",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{makeHoconObject([]string{"a1"}, []string{"a2"})}},
+					simpleKey1: wrapInValue(wrapInObject(simpleKey2, simpleLiteral2)),
 				},
-				keys: []string{"a"},
+				keys: []string{simpleKey1},
 			},
-			want: "a : {" + newLine + "  a1 : a2" + newLine + "}" + newLine,
+			want: simpleKey1 + " : {" + newLine +
+				"  " + simpleKey2 + " : " + simpleLiteral2.value + newLine +
+				"}" + newLine,
 		},
 		{
 			name: "fails with cycled object",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{getCycledSubstitution()}},
+					simpleKey1: wrapInValue(getCycledSubstitution()),
 				},
-				keys: []string{"a"},
+				keys: []string{simpleKey1},
 			},
 			want: cannotGetStringError,
 		},
@@ -614,50 +612,51 @@ func TestHoconObject_ToString(t *testing.T) {
 			want:   "",
 		},
 		{
-			name: "object returns its fields with values",
+			name: "returns its fields with values",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
-				keys: []string{"a", "c"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
-			want: "a : b" + newLine + "c : d" + newLine,
+			want: simpleKey1 + " : " + simpleLiteral1.value + newLine +
+				simpleKey2 + " : " + simpleLiteral2.value + newLine,
 		},
 		{
 			name: "object with non 0 indent returns its fields with values",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
-				keys: []string{"a", "c"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
 			args: args{indent: 2},
-			want: "    a : b" + newLine + "    c : d" + newLine,
+			want: "    " + simpleKey1 + " : " + simpleLiteral1.value + newLine +
+				"    " + simpleKey2 + " : " + simpleLiteral2.value + newLine,
 		},
 		{
-			name: "object returns nested objects in brackets",
+			name: "returns nested objects in brackets",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{makeHoconObject([]string{"a1"}, []string{"a2"})}},
+					simpleKey1: wrapInValue(wrapInObject(simpleKey2, simpleLiteral1)),
 				},
-				keys: []string{"a"},
+				keys: []string{simpleKey1},
 			},
-			want: "a : {" + newLine + "  a1 : a2" + newLine + "}" + newLine,
+			want: simpleKey1 + " : {" + newLine +
+				"  " + simpleKey2 + " : " + simpleLiteral1.value + newLine +
+				"}" + newLine,
 		},
 		{
 			name: "object with non 0 indent returns nested objects in brackets",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{makeHoconObject([]string{"a1"}, []string{"a2"})}},
+					simpleKey1: wrapInValue(wrapInObject(simpleKey2, simpleLiteral1)),
 				},
-				keys: []string{"a"},
+				keys: []string{simpleKey1},
 			},
 			args: args{indent: 3},
-			want: "      a : {" + newLine + "        a1 : a2" + newLine + "      }" + newLine,
+			want: "      " + simpleKey1 + " : {" + newLine +
+				"        " + simpleKey2 + " : " + simpleLiteral1.value + newLine +
+				"      }" + newLine,
 		},
 	}
+	wrapInObject(simpleKey1, wrapInObject(simpleKey2, simpleLiteral1))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconObject{
@@ -693,38 +692,35 @@ func TestHoconObject_Unwrapped(t *testing.T) {
 			want:   nil,
 		},
 		{
-			name: "object returns its items",
+			name: "returns its items",
 			fields: fields{
-				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{NewHoconLiteral("b")}},
-					"c": {values: []HoconElement{NewHoconLiteral("d")}},
-				},
-				keys: []string{"a", "c"},
+				items: getMapOfTwoSimpleLiterals(),
+				keys:  getArrayOfTwoSimpleKeys(),
 			},
 			want: map[string]interface{}{
-				"a": &HoconValue{values: []HoconElement{NewHoconLiteral("b")}},
-				"c": &HoconValue{values: []HoconElement{NewHoconLiteral("d")}},
+				simpleKey1: wrapInValue(simpleLiteral1),
+				simpleKey2: wrapInValue(simpleLiteral2),
 			},
 		},
 		{
-			name: "object returns its item with nested object unwrapped",
+			name: "returns its item with nested object unwrapped",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{makeHoconObject([]string{"a1"}, []string{"a2"})}},
+					simpleKey1: wrapInValue(wrapInObject(simpleKey2, simpleLiteral2)),
 				},
-				keys: []string{"a"},
+				keys: []string{simpleKey1},
 			},
 			want: map[string]interface{}{
-				"a": map[string]interface{}{"a1": &HoconValue{values: []HoconElement{NewHoconLiteral("a2")}}},
+				simpleKey1: map[string]interface{}{simpleKey2: wrapInValue(simpleLiteral2)},
 			},
 		},
 		{
 			name: "fails with cycled object",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {values: []HoconElement{getCycledSubstitution()}},
+					simpleKey1: wrapInValue(getCycledSubstitution()),
 				},
-				keys: []string{"a"},
+				keys: []string{simpleKey1},
 			},
 			wantErr: true,
 		},
@@ -732,15 +728,12 @@ func TestHoconObject_Unwrapped(t *testing.T) {
 			name: "fails to merge with nested cycled object",
 			fields: fields{
 				items: map[string]*HoconValue{
-					"a": {
-						values: []HoconElement{
-							&HoconSubstitution{
-								ResolvedValue: &HoconValue{values: []HoconElement{getCycledObject()}},
-							},
-						},
-					},
+					simpleKey1: wrapInValue(
+						wrapInSubstitution(
+							wrapInValue(
+								wrapInObject(simpleKey2, getCycledSubstitution())))),
 				},
-				keys: []string{"a"},
+				keys: []string{simpleKey1},
 			},
 			wantErr: true,
 		},

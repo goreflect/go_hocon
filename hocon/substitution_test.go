@@ -31,13 +31,13 @@ func TestHoconSubstitution_GetArray(t *testing.T) {
 		{
 			name: "returns nil if it contains not an array",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral1}},
 			},
 		},
 		{
 			name: "returns nil if it contains an array after another value",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral, simpleTwoValuesArray}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral1, simpleTwoValuesArray}},
 			},
 			want: simpleTwoValuesArray.values,
 		},
@@ -116,14 +116,14 @@ func TestHoconSubstitution_GetObject(t *testing.T) {
 		{
 			name: "returns nil if it contains not an object",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral1}},
 			},
 			want: nil,
 		},
 		{
 			name: "returns nil if it contains an element before an object",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral, simpleObject}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral1, simpleObject}},
 			},
 			want: nil,
 		},
@@ -192,9 +192,9 @@ func TestHoconSubstitution_GetString(t *testing.T) {
 		{
 			name: "returns string if it contains string",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral1}},
 			},
-			want: simpleLiteral.String(),
+			want: simpleLiteral1.String(),
 		},
 	}
 	for _, tt := range tests {
@@ -330,7 +330,7 @@ func TestHoconSubstitution_IsObject(t *testing.T) {
 
 func TestHoconSubstitution_IsString(t *testing.T) {
 	simpleSubstitution := &HoconSubstitution{
-		ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral}},
+		ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral1}},
 	}
 	wrapperSubstitution := &HoconSubstitution{
 		ResolvedValue: &HoconValue{values: []HoconElement{simpleSubstitution}},
@@ -350,7 +350,7 @@ func TestHoconSubstitution_IsString(t *testing.T) {
 		{
 			name: "returns true if contains string",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral1}},
 			},
 			want: true,
 		},
@@ -402,7 +402,7 @@ func TestHoconSubstitution_checkCycleRef(t *testing.T) {
 		{
 			name: "returns false if does not contain cycle reference",
 			fields: fields{
-				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral}},
+				ResolvedValue: &HoconValue{values: []HoconElement{simpleLiteral1}},
 			},
 			wantErr: false,
 		},

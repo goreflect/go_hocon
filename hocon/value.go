@@ -49,7 +49,7 @@ func NewHoconValue() *HoconValue {
 }
 
 func (p *HoconValue) IsEmpty() bool {
-	if len(p.values) == 0 {
+	if p == nil || len(p.values) == 0 {
 		return true
 	}
 
@@ -71,6 +71,10 @@ func (p *HoconValue) AtKey(key string) *HoconRoot {
 }
 
 func (p *HoconValue) IsString() bool {
+	if p == nil {
+		return false
+	}
+
 	strCount := 0
 
 	for _, v := range p.values {
@@ -248,7 +252,7 @@ func (p *HoconValue) ToString(indent int) (string, error) {
 }
 
 func (p *HoconValue) GetObject() (*HoconObject, error) {
-	if len(p.values) == 0 {
+	if p == nil || len(p.values) == 0 {
 		return nil, nil
 	}
 
@@ -521,7 +525,7 @@ func (p *HoconValue) GetStringList() ([]string, error) {
 func (p *HoconValue) GetArray() ([]*HoconValue, error) {
 	var items []*HoconValue
 
-	if len(p.values) == 0 {
+	if p == nil || len(p.values) == 0 {
 		return items, nil
 	}
 
