@@ -80,10 +80,9 @@ func TestHoconObject_GetKey(t *testing.T) {
 			want: nil,
 		},
 		{
-			name:   "returns nil out of nil key/value",
-			fields: fields{},
-			args:   args{key: simpleKey1},
-			want:   nil,
+			name: "returns nil out of nil key/value",
+			args: args{key: simpleKey1},
+			want: nil,
 		},
 	}
 	for _, tt := range tests {
@@ -730,8 +729,7 @@ func TestHoconObject_Unwrapped(t *testing.T) {
 				items: map[string]*HoconValue{
 					simpleKey1: wrapInValue(
 						wrapInSubstitution(
-							wrapInValue(
-								wrapInObject(simpleKey2, getCycledSubstitution())))),
+							wrapInObject(simpleKey2, getCycledSubstitution()))),
 				},
 				keys: []string{simpleKey1},
 			},

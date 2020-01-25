@@ -20,20 +20,18 @@ func TestHoconRoot_Substitutions(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "returns substitution correctly",
-			fields: fields{
-				value:         nil,
-				substitutions: []*HoconSubstitution{getCycledSubstitution()},
-			},
-			want: []*HoconSubstitution{getCycledSubstitution()},
-		},
-		{
 			name: "returns substitutions correctly",
 			fields: fields{
-				value:         nil,
-				substitutions: []*HoconSubstitution{getCycledSubstitution(), getCycledSubstitution()},
+				value: nil,
+				substitutions: []*HoconSubstitution{
+					wrapInSubstitution(simpleLiteral1),
+					wrapInSubstitution(simpleLiteral1),
+				},
 			},
-			want: []*HoconSubstitution{getCycledSubstitution(), getCycledSubstitution()},
+			want: []*HoconSubstitution{
+				wrapInSubstitution(simpleLiteral1),
+				wrapInSubstitution(simpleLiteral1),
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -66,12 +64,13 @@ func TestHoconRoot_Value(t *testing.T) {
 		{
 			name: "returns value correctly",
 			fields: fields{
-				value:         &HoconValue{values: []HoconElement{simpleLiteral1}},
+				value:         wrapInValue(simpleLiteral1),
 				substitutions: nil,
 			},
-			want: &HoconValue{values: []HoconElement{simpleLiteral1}},
+			want: wrapInValue(simpleLiteral1),
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := HoconRoot{
@@ -102,18 +101,25 @@ func TestNewHoconRoot(t *testing.T) {
 		{
 			name: "returns value correctly",
 			args: args{
-				value: &HoconValue{values: []HoconElement{simpleLiteral1}},
+				value: wrapInValue(simpleLiteral1),
 			},
-			want: &HoconRoot{value: &HoconValue{values: []HoconElement{simpleLiteral1}}},
+			want: &HoconRoot{value: wrapInValue(simpleLiteral1)},
 		},
 		{
 			name: "returns substitutions correctly",
 			args: args{
-				substitutions: []*HoconSubstitution{getCycledSubstitution(), getCycledSubstitution()},
+				substitutions: []*HoconSubstitution{
+					wrapInSubstitution(simpleLiteral1),
+					wrapInSubstitution(simpleLiteral2),
+				},
 			},
-			want: &HoconRoot{substitutions: []*HoconSubstitution{getCycledSubstitution(), getCycledSubstitution()}},
+			want: &HoconRoot{substitutions: []*HoconSubstitution{
+				wrapInSubstitution(simpleLiteral1),
+				wrapInSubstitution(simpleLiteral2),
+			}},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := NewHoconRoot(tt.args.value, tt.args.substitutions...); !reflect.DeepEqual(got, tt.want) {
