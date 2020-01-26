@@ -4,6 +4,7 @@ const (
 	simpleKey1 = "key1"
 	simpleKey2 = "key2"
 	simpleKey3 = "key3"
+	specials   = "`-=~!@#$%^&*()_+[]\\{}|\"':;,./<>?"
 )
 
 var (

@@ -304,7 +304,7 @@ func (p *HoconTokenizer) PullUnquotedKey() (*Token, error) {
 		}
 	}
 
-	return DefaultToken.Key(strings.TrimSpace(buf.String())), nil
+	return NewTokenKey(strings.TrimSpace(buf.String())), nil
 }
 
 func (p *HoconTokenizer) IsUnquotedKey() bool {
@@ -333,7 +333,7 @@ func (p *HoconTokenizer) PullTripleQuotedText() (*Token, error) {
 		p.TakeOne()
 	}
 	p.Take(3)
-	return DefaultToken.LiteralValue(buf.String()), nil
+	return NewTokenLiteralValue(buf.String()), nil
 }
 
 func (p *HoconTokenizer) PullQuotedText() (*Token, error) {
@@ -357,7 +357,7 @@ func (p *HoconTokenizer) PullQuotedText() (*Token, error) {
 		}
 	}
 	p.TakeOne()
-	return DefaultToken.LiteralValue(buf.String()), nil
+	return NewTokenLiteralValue(buf.String()), nil
 }
 
 func (p *HoconTokenizer) PullQuotedKey() (*Token, error) {
@@ -381,7 +381,7 @@ func (p *HoconTokenizer) PullQuotedKey() (*Token, error) {
 		}
 	}
 	p.TakeOne()
-	return DefaultToken.Key(buf.String()), nil
+	return NewTokenKey(buf.String()), nil
 }
 
 func (p *HoconTokenizer) PullInclude() (*Token, error) {
@@ -395,7 +395,7 @@ func (p *HoconTokenizer) PullInclude() (*Token, error) {
 	}
 
 	unQuote := rest.value
-	return DefaultToken.Include(unQuote), nil
+	return NewTokenInclude(unQuote), nil
 }
 
 func (p *HoconTokenizer) pullEscapeSequence() (string, error) {
@@ -510,7 +510,7 @@ func (p *HoconTokenizer) pullSubstitution() (*Token, error) {
 		}
 	}
 	p.TakeOne()
-	return DefaultToken.Substitution(buf.String(), isOptional), nil
+	return NewTokenSubstitution(buf.String(), isOptional), nil
 }
 
 func (p *HoconTokenizer) IsSpaceOrTab() bool {
@@ -536,7 +536,7 @@ func (p *HoconTokenizer) PullSpaceOrTab() (*Token, error) {
 			return nil, err
 		}
 	}
-	return DefaultToken.LiteralValue(buf.String()), nil
+	return NewTokenLiteralValue(buf.String()), nil
 }
 
 func (p *HoconTokenizer) pullUnquotedText() (*Token, error) {
@@ -546,7 +546,7 @@ func (p *HoconTokenizer) pullUnquotedText() (*Token, error) {
 			return nil, err
 		}
 	}
-	return DefaultToken.LiteralValue(buf.String()), nil
+	return NewTokenLiteralValue(buf.String()), nil
 }
 
 func (p *HoconTokenizer) isUnquotedText() bool {
