@@ -2,6 +2,7 @@ package hocon
 
 import (
 	"github.com/stretchr/testify/assert"
+	"log"
 	"reflect"
 	"testing"
 )
@@ -57,6 +58,67 @@ func getTestData(wrongToken string, append_ bool, correctTokens ...string) []tes
 	}
 
 	return tests
+}
+
+func getTestDataForWrongTokens(correctToken string, append_ bool, wrongTokens ...string) []testData {
+	tests := []testData{
+		{
+			name: "returns false with nil tokenizer",
+			want: false,
+		},
+		{
+			name: "returns true with needed token",
+			fields: fields{
+				Tokenizer: NewTokenizer(correctToken),
+			},
+			want: true,
+		},
+	}
+
+	for _, wrongToken := range wrongTokens {
+		if append_ {
+			wrongToken += correctToken
+		}
+
+		wrongTokenTests := []testData{
+			{
+				name: "returns false with no needed token",
+				fields: fields{
+					Tokenizer: NewTokenizer(wrongToken),
+				},
+				want: false,
+			},
+			{
+				name: "returns false needed token not first",
+				fields: fields{
+					Tokenizer: NewTokenizer(wrongToken + correctToken),
+				},
+				want: false,
+			},
+		}
+
+		tests = append(tests, wrongTokenTests...)
+	}
+
+	return tests
+}
+
+func getPullTestData() {
+	{
+	name: "returns array with nil token",
+		want: NewToken(TokenTypeArrayEnd),
+	},
+	{
+	name:   "returns array with wrong token",
+		fields: fields{Tokenizer: NewTokenizer(endOfObjectToken)},
+		want:   NewToken(TokenTypeArrayEnd),
+	},
+	{
+	name:   "returns array with wrong token",
+		fields: fields{Tokenizer: NewTokenizer(arrayEndToken)},
+		want:   NewToken(TokenTypeArrayEnd),
+	},
+
 }
 
 func TestHoconTokenizer_IsArrayEnd(t *testing.T) {
@@ -352,22 +414,16 @@ func TestHoconTokenizer_IsSubstitutionStart(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsUnquotedKey(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   bool
-	}{
-		// TODO: Add test cases.
-	}
+	tokens := append(unquotedKeyTokens, startOfCommentTokens...)
+	tests := getTestDataForWrongTokens("a", true, tokens...)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
 				Tokenizer: tt.fields.Tokenizer,
 			}
 			if got := p.IsUnquotedKey(); got != tt.want {
+				log.Println(p.text)
 				t.Errorf("IsUnquotedKey() = %v, want %v", got, tt.want)
 			}
 		})
@@ -375,16 +431,10 @@ func TestHoconTokenizer_IsUnquotedKey(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsUnquotedKeyStart(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   bool
-	}{
-		// TODO: Add test cases.
-	}
+	tokens := append(unquotedKeyTokens, startOfCommentTokens...)
+	tokens = append(tokens, whitespaceTokens...)
+	tests := getTestDataForWrongTokens("a", true, tokens...)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -398,16 +448,8 @@ func TestHoconTokenizer_IsUnquotedKeyStart(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsWhitespace(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   bool
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getTestData("a", false, whitespaceTokens...)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -421,16 +463,9 @@ func TestHoconTokenizer_IsWhitespace(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsWhitespaceOrComment(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   bool
-	}{
-		// TODO: Add test cases.
-	}
+	tokens := append(whitespaceTokens, startOfCommentTokens...)
+	tests := getTestData("a", true, tokens...)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -444,15 +479,25 @@ func TestHoconTokenizer_IsWhitespaceOrComment(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullArrayEnd(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
 	tests := []struct {
 		name   string
 		fields fields
 		want   *Token
 	}{
-		// TODO: Add test cases.
+		{
+			name: "returns array with nil token",
+			want: NewToken(TokenTypeArrayEnd),
+		},
+		{
+			name:   "returns array with wrong token",
+			fields: fields{Tokenizer: NewTokenizer(endOfObjectToken)},
+			want:   NewToken(TokenTypeArrayEnd),
+		},
+		{
+			name:   "returns array with wrong token",
+			fields: fields{Tokenizer: NewTokenizer(arrayEndToken)},
+			want:   NewToken(TokenTypeArrayEnd),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

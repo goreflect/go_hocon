@@ -41,6 +41,9 @@ var (
 	spaceOrTabTokens        = []string{" ", "\t"}
 	startOfCommentTokens    = []string{"#", "//"}
 	substitutionStartTokens = []string{"${", "${?"}
+	//	HoconNotInUnquotedKey  = "$\"{}[]:=+,#`^?!@*&\\."
+	unquotedKeyTokens = []string{"$", `"`, "{", "}", "[", "]", ":", "=",
+		"+", ",", "#", "`", "^", "?", "!", "@", "*", "&", `\`, "."}
 
 	/*
 		SPACE (\u0020)
@@ -373,11 +376,24 @@ func (p *HoconTokenizer) PullUnquotedKey() (*Token, error) {
 }
 
 func (p *HoconTokenizer) IsUnquotedKey() bool {
-	return !p.EOF() && !p.IsStartOfComment() && (strings.IndexByte(HoconNotInUnquotedKey, p.Peek()) == -1)
+	if p.Tokenizer == nil {
+		return false
+	}
+
+	return !p.EOF() &&
+		!p.IsStartOfComment() &&
+		!p.Matches(unquotedKeyTokens...)
 }
 
 func (p *HoconTokenizer) IsUnquotedKeyStart() bool {
-	return !p.EOF() && !p.IsWhitespace() && !p.IsStartOfComment() && (strings.IndexByte(HoconNotInUnquotedKey, p.Peek()) == -1)
+	if p.Tokenizer == nil {
+		return false
+	}
+
+	return !p.EOF() &&
+		!p.IsWhitespace() &&
+		!p.IsStartOfComment() &&
+		!p.Matches(unquotedKeyTokens...)
 }
 
 func (p *HoconTokenizer) IsWhitespace() bool {
