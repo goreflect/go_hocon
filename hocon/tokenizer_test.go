@@ -11,14 +11,14 @@ type fields struct {
 	Tokenizer *Tokenizer
 }
 
-type testData struct {
+type isTestData struct {
 	name   string
 	fields fields
 	want   bool
 }
 
-func getTestData(wrongToken string, append_ bool, correctTokens ...string) []testData {
-	tests := []testData{
+func getIsTestsForCorrectTokens(wrongToken string, append_ bool, correctTokens ...string) []isTestData {
+	tests := []isTestData{
 		{
 			name: "returns false with nil tokenizer",
 			want: false,
@@ -37,7 +37,7 @@ func getTestData(wrongToken string, append_ bool, correctTokens ...string) []tes
 			correctToken += wrongToken
 		}
 
-		correctTokenTests := []testData{
+		correctTokenTests := []isTestData{
 			{
 				name: "returns false needed token not first",
 				fields: fields{
@@ -60,8 +60,8 @@ func getTestData(wrongToken string, append_ bool, correctTokens ...string) []tes
 	return tests
 }
 
-func getTestDataForWrongTokens(correctToken string, append_ bool, wrongTokens ...string) []testData {
-	tests := []testData{
+func getIsTestsForWrongTokens(correctToken string, append_ bool, wrongTokens ...string) []isTestData {
+	tests := []isTestData{
 		{
 			name: "returns false with nil tokenizer",
 			want: false,
@@ -80,7 +80,7 @@ func getTestDataForWrongTokens(correctToken string, append_ bool, wrongTokens ..
 			wrongToken += correctToken
 		}
 
-		wrongTokenTests := []testData{
+		wrongTokenTests := []isTestData{
 			{
 				name: "returns false with no needed token",
 				fields: fields{
@@ -103,26 +103,45 @@ func getTestDataForWrongTokens(correctToken string, append_ bool, wrongTokens ..
 	return tests
 }
 
-func getPullTestData() {
-	{
-	name: "returns array with nil token",
-		want: NewToken(TokenTypeArrayEnd),
-	},
-	{
-	name:   "returns array with wrong token",
-		fields: fields{Tokenizer: NewTokenizer(endOfObjectToken)},
-		want:   NewToken(TokenTypeArrayEnd),
-	},
-	{
-	name:   "returns array with wrong token",
-		fields: fields{Tokenizer: NewTokenizer(arrayEndToken)},
-		want:   NewToken(TokenTypeArrayEnd),
-	},
+type pullTestData struct {
+	name   string
+	fields fields
+	want   *Token
+}
 
+func getPullTestsForCorrectTokens(expectedType TokenType, wrongToken string, correctTokens ...string) []pullTestData {
+	expectedObject := NewToken(expectedType)
+	tests := []pullTestData{
+		{
+			name: "returns token with nil token",
+			want: expectedObject,
+		},
+		{
+			name:   "returns token with wrong token",
+			fields: fields{Tokenizer: NewTokenizer(wrongToken)},
+			want:   expectedObject,
+		},
+	}
+
+	for _, correctToken := range correctTokens {
+		correctTokenTests := []pullTestData{
+			{
+				name: "returns token with correct token",
+				fields: fields{
+					Tokenizer: NewTokenizer(correctToken),
+				},
+				want: expectedObject,
+			},
+		}
+
+		tests = append(tests, correctTokenTests...)
+	}
+
+	return tests
 }
 
 func TestHoconTokenizer_IsArrayEnd(t *testing.T) {
-	tests := getTestData("a", false, arrayEndToken)
+	tests := getIsTestsForCorrectTokens("a", false, arrayEndToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -136,7 +155,7 @@ func TestHoconTokenizer_IsArrayEnd(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsArrayStart(t *testing.T) {
-	tests := getTestData("a", false, arrayStartToken)
+	tests := getIsTestsForCorrectTokens("a", false, arrayStartToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -150,7 +169,7 @@ func TestHoconTokenizer_IsArrayStart(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsAssignment(t *testing.T) {
-	tests := getTestData("a", true, assignmentTokens...)
+	tests := getIsTestsForCorrectTokens("a", true, assignmentTokens...)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -164,7 +183,7 @@ func TestHoconTokenizer_IsAssignment(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsComma(t *testing.T) {
-	tests := getTestData("a", false, commaToken)
+	tests := getIsTestsForCorrectTokens("a", false, commaToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -178,7 +197,7 @@ func TestHoconTokenizer_IsComma(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsDot(t *testing.T) {
-	tests := getTestData("a", false, dotToken)
+	tests := getIsTestsForCorrectTokens("a", false, dotToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -192,7 +211,7 @@ func TestHoconTokenizer_IsDot(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsEndOfObject(t *testing.T) {
-	tests := getTestData("a", false, endOfObjectToken)
+	tests := getIsTestsForCorrectTokens("a", false, endOfObjectToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -281,7 +300,7 @@ func TestHoconTokenizer_IsInclude(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsNewline(t *testing.T) {
-	tests := getTestData("a", false, newLineToken)
+	tests := getIsTestsForCorrectTokens("a", false, newLineToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -295,7 +314,7 @@ func TestHoconTokenizer_IsNewline(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsObjectStart(t *testing.T) {
-	tests := getTestData("a", false, objectStartToken)
+	tests := getIsTestsForCorrectTokens("a", false, objectStartToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -309,7 +328,7 @@ func TestHoconTokenizer_IsObjectStart(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsPlusAssignment(t *testing.T) {
-	tests := getTestData("a", false, plusAssignmentToken)
+	tests := getIsTestsForCorrectTokens("a", false, plusAssignmentToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -323,7 +342,7 @@ func TestHoconTokenizer_IsPlusAssignment(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsSpaceOrTab(t *testing.T) {
-	tests := getTestData("a", true, spaceOrTabTokens...)
+	tests := getIsTestsForCorrectTokens("a", true, spaceOrTabTokens...)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -337,7 +356,7 @@ func TestHoconTokenizer_IsSpaceOrTab(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsStartOfComment(t *testing.T) {
-	tests := getTestData("a", true, startOfCommentTokens...)
+	tests := getIsTestsForCorrectTokens("a", true, startOfCommentTokens...)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -351,7 +370,7 @@ func TestHoconTokenizer_IsStartOfComment(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsStartOfQuotedText(t *testing.T) {
-	tests := getTestData("a", false, startOfQuotedTextToken)
+	tests := getIsTestsForCorrectTokens("a", false, startOfQuotedTextToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -365,7 +384,7 @@ func TestHoconTokenizer_IsStartOfQuotedText(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsStartOfTripleQuotedText(t *testing.T) {
-	tests := getTestData("a", false, startOfTripleQuotedTextToken)
+	tests := getIsTestsForCorrectTokens("a", false, startOfTripleQuotedTextToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -379,8 +398,8 @@ func TestHoconTokenizer_IsStartOfTripleQuotedText(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsStartSimpleValue(t *testing.T) {
-	tests := getTestData("\\", true, "a")
-	tests = append(tests, testData{
+	tests := getIsTestsForCorrectTokens("\\", true, "a")
+	tests = append(tests, isTestData{
 		name: "returns true if starts with more than one space",
 		fields: fields{
 			Tokenizer: NewTokenizer("  "),
@@ -400,7 +419,7 @@ func TestHoconTokenizer_IsStartSimpleValue(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsSubstitutionStart(t *testing.T) {
-	tests := getTestData("a", true, substitutionStartTokens...)
+	tests := getIsTestsForCorrectTokens("a", true, substitutionStartTokens...)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -415,7 +434,7 @@ func TestHoconTokenizer_IsSubstitutionStart(t *testing.T) {
 
 func TestHoconTokenizer_IsUnquotedKey(t *testing.T) {
 	tokens := append(unquotedKeyTokens, startOfCommentTokens...)
-	tests := getTestDataForWrongTokens("a", true, tokens...)
+	tests := getIsTestsForWrongTokens("a", true, tokens...)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -433,7 +452,7 @@ func TestHoconTokenizer_IsUnquotedKey(t *testing.T) {
 func TestHoconTokenizer_IsUnquotedKeyStart(t *testing.T) {
 	tokens := append(unquotedKeyTokens, startOfCommentTokens...)
 	tokens = append(tokens, whitespaceTokens...)
-	tests := getTestDataForWrongTokens("a", true, tokens...)
+	tests := getIsTestsForWrongTokens("a", true, tokens...)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -448,7 +467,7 @@ func TestHoconTokenizer_IsUnquotedKeyStart(t *testing.T) {
 }
 
 func TestHoconTokenizer_IsWhitespace(t *testing.T) {
-	tests := getTestData("a", false, whitespaceTokens...)
+	tests := getIsTestsForCorrectTokens("a", false, whitespaceTokens...)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -464,7 +483,7 @@ func TestHoconTokenizer_IsWhitespace(t *testing.T) {
 
 func TestHoconTokenizer_IsWhitespaceOrComment(t *testing.T) {
 	tokens := append(whitespaceTokens, startOfCommentTokens...)
-	tests := getTestData("a", true, tokens...)
+	tests := getIsTestsForCorrectTokens("a", true, tokens...)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -479,26 +498,7 @@ func TestHoconTokenizer_IsWhitespaceOrComment(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullArrayEnd(t *testing.T) {
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		{
-			name: "returns array with nil token",
-			want: NewToken(TokenTypeArrayEnd),
-		},
-		{
-			name:   "returns array with wrong token",
-			fields: fields{Tokenizer: NewTokenizer(endOfObjectToken)},
-			want:   NewToken(TokenTypeArrayEnd),
-		},
-		{
-			name:   "returns array with wrong token",
-			fields: fields{Tokenizer: NewTokenizer(arrayEndToken)},
-			want:   NewToken(TokenTypeArrayEnd),
-		},
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypeArrayEnd, endOfObjectToken, arrayEndToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -512,16 +512,7 @@ func TestHoconTokenizer_PullArrayEnd(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullArrayStart(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypeArrayStart, objectStartToken, arrayStartToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -535,16 +526,7 @@ func TestHoconTokenizer_PullArrayStart(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullAssignment(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypeAssign, objectStartToken, assignmentTokens...)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -558,16 +540,7 @@ func TestHoconTokenizer_PullAssignment(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullComma(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypeComma, objectStartToken, commaToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -581,16 +554,7 @@ func TestHoconTokenizer_PullComma(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullComment(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypeComment, objectStartToken, startOfCommentTokens...)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -605,16 +569,7 @@ func TestHoconTokenizer_PullComment(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullDot(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypeDot, objectStartToken, dotToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -628,16 +583,7 @@ func TestHoconTokenizer_PullDot(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullEndOfObject(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypeObjectEnd, objectStartToken, endOfObjectToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -680,16 +626,7 @@ func TestHoconTokenizer_PullInclude(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullNewline(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypeNewline, endOfObjectToken, newLineToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -712,7 +649,12 @@ func TestHoconTokenizer_PullNext(t *testing.T) {
 		want    *Token
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "",
+			//fields:  fields{ NewTokenizer("") },
+			want:    NewToken(TokenTypeEoF),
+			wantErr: true, //todo continue here
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -732,16 +674,7 @@ func TestHoconTokenizer_PullNext(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullPlusAssignment(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypePlusAssign, objectStartToken, plusAssignmentToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -895,16 +828,7 @@ func TestHoconTokenizer_PullSpaceOrTab(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullStartOfObject(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypeObjectStart, endOfObjectToken, objectStartToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{

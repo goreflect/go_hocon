@@ -146,7 +146,7 @@ func (p *Tokenizer) MatchesMore(patterns []string) bool {
 }
 
 func (p *Tokenizer) Take(length int) string {
-	if p.index+length > len(p.text) {
+	if p == nil || p.index+length > len(p.text) {
 		return ""
 	}
 
@@ -164,7 +164,7 @@ func (p *Tokenizer) Peek() byte {
 }
 
 func (p *Tokenizer) TakeOne() byte {
-	if p.EOF() {
+	if p == nil || p.EOF() {
 		return 0
 	}
 
@@ -203,7 +203,7 @@ func (p *HoconTokenizer) PullWhitespaceAndComments() {
 func (p *HoconTokenizer) PullRestOfLine() string {
 	buf := bytes.NewBuffer(nil)
 
-	for !p.EOF() {
+	for p.Tokenizer != nil && !p.EOF() {
 		c := p.TakeOne()
 		if c == '\n' {
 			break
@@ -263,7 +263,13 @@ func (p *HoconTokenizer) PullNext() (*Token, error) {
 		return token, nil
 	}
 
-	return nil, fmt.Errorf("unknown token, offset: %d", p.index)
+	var msg string
+	if p.Tokenizer == nil {
+		msg = "unknown token"
+	} else {
+		msg = fmt.Sprintf("unknown token, offset: %d", p.index)
+	}
+	return nil, fmt.Errorf(msg)
 }
 
 func (p *HoconTokenizer) isStartOfQuotedKey() bool {
@@ -552,6 +558,9 @@ func (p *HoconTokenizer) IsSubstitutionStart() bool {
 }
 
 func (p *HoconTokenizer) IsInclude() bool {
+	if p.Tokenizer == nil {
+		return false
+	}
 	p.Push()
 	defer func() {
 		if err := p.Pop(); err != nil {
