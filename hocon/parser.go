@@ -238,9 +238,7 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 		}
 
 		if p.reader.IsSpaceOrTab() {
-			if err := p.ParseTrailingWhitespace(owner); err != nil {
-				return err
-			}
+			p.ParseTrailingWhitespace(owner)
 		}
 	}
 	p.ignoreComma()
@@ -248,17 +246,13 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 	return nil
 }
 
-func (p *Parser) ParseTrailingWhitespace(owner *HoconValue) error {
-	ws, err := p.reader.PullSpaceOrTab()
-	if err != nil {
-		return nil
-	}
+func (p *Parser) ParseTrailingWhitespace(owner *HoconValue) {
+	ws := p.reader.PullSpaceOrTab()
 
 	if len(ws.value) > 0 {
 		wsList := NewHoconLiteral(ws.value)
 		owner.AppendValue(wsList)
 	}
-	return nil
 }
 
 func (p *Parser) ParseSubstitution(value string, isOptional bool) *HoconSubstitution {
