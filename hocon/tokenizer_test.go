@@ -829,6 +829,10 @@ func TestHoconTokenizer_PullQuotedText(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "fails with nil tokenizer",
+			wantErr: true,
+		},
+		{
 			name: "returns correct token",
 			fields: fields{
 				Tokenizer: NewTokenizer(`"` + simpleKey1 + `"`),
@@ -876,7 +880,47 @@ func TestHoconTokenizer_PullRestOfLine(t *testing.T) {
 		fields fields
 		want   string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "returns correct simple token",
+			fields: fields{
+				Tokenizer: NewTokenizer(simpleKey1),
+			},
+			want: simpleKey1,
+		},
+		{
+			name: "fails with nil tokenizer",
+			fields: fields{
+				Tokenizer: NewTokenizer(newLine),
+			},
+		},
+		{
+			name: "returns correct quoted token",
+			fields: fields{
+				Tokenizer: NewTokenizer(`"` + simpleKey1 + `"`),
+			},
+			want: `"` + simpleKey1 + `"`,
+		},
+		{
+			name: "returns correct quoted token with incorrect escape char",
+			fields: fields{
+				Tokenizer: NewTokenizer(`"\z` + simpleKey1 + `"`),
+			},
+			want: `"\z` + simpleKey1 + `"`,
+		},
+		{
+			name: "returns correct token before \\n",
+			fields: fields{
+				Tokenizer: NewTokenizer(simpleKey1 + "\n" + simpleKey2),
+			},
+			want: simpleKey1,
+		},
+		{
+			name: "returns correct token before \\r\\n",
+			fields: fields{
+				Tokenizer: NewTokenizer(simpleKey1 + "\r\n" + simpleKey2),
+			},
+			want: simpleKey1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -901,7 +945,45 @@ func TestHoconTokenizer_PullSimpleValue(t *testing.T) {
 		want    *Token
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "fails with nil tokenizer",
+			wantErr: true,
+		},
+		{
+			name: "fails to get simple value out of quoted string",
+			fields: fields{
+				Tokenizer: NewTokenizer(`"` + simpleKey1 + `"`),
+			},
+			wantErr: true,
+		},
+		{
+			name: "fails with incorrect escaped char",
+			fields: fields{
+				Tokenizer: NewTokenizer(`"\z` + simpleKey1 + `"`),
+			},
+			wantErr: true,
+		},
+		{
+			name: "fail to get simple value out of escaped char",
+			fields: fields{
+				Tokenizer: NewTokenizer(`\t` + simpleKey1),
+			},
+			wantErr: true,
+		},
+		{
+			name: "returns spaces before value",
+			fields: fields{
+				Tokenizer: NewTokenizer("  " + simpleKey1),
+			},
+			want: NewTokenLiteralValue("  "),
+		},
+		{
+			name: "returns simple value",
+			fields: fields{
+				Tokenizer: NewTokenizer(simpleKey1),
+			},
+			want: NewTokenLiteralValue(simpleKey1),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
