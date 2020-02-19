@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const infinite = "infinite"
+
 var (
 	_Num1000 = big.NewInt(1000)
 	_Num1024 = big.NewInt(1024)
@@ -335,7 +337,7 @@ func (p *HoconValue) GetFloat32() (float32, error) {
 func (p *HoconValue) GetInt64() (int64, error) {
 	stringV, err := p.GetString()
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 
 	return strconv.ParseInt(stringV, 10, 64)
@@ -344,7 +346,7 @@ func (p *HoconValue) GetInt64() (int64, error) {
 func (p *HoconValue) GetInt32() (int32, error) {
 	stringV, err := p.GetString()
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 
 	intV, err := strconv.ParseInt(stringV, 10, 32)
@@ -358,7 +360,7 @@ func (p *HoconValue) GetInt32() (int32, error) {
 func (p *HoconValue) GetByte() (byte, error) {
 	stringV, err := p.GetString()
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 
 	intV, err := strconv.ParseInt(stringV, 10, 8)
@@ -417,7 +419,7 @@ func (p *HoconValue) GetInt64List() ([]int64, error) {
 	for _, v := range arrayV {
 		intV, err := v.GetInt64()
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 
 		items = append(items, intV)
@@ -581,7 +583,7 @@ func (p *HoconValue) GetTimeDuration(allowInfinite bool) (time.Duration, error) 
 		return 0, fmt.Errorf("cannot parse time value: %s", stringV)
 	}
 
-	if strings.ToLower(stringV) == "infinite" {
+	if strings.ToLower(stringV) == infinite {
 		if allowInfinite {
 			return time.Duration(-1), nil
 		}

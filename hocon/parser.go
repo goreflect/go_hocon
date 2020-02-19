@@ -237,7 +237,7 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 func (p *Parser) ParseTrailingWhitespace(owner *HoconValue) error {
 	ws, err := p.reader.PullSpaceOrTab()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if len(ws.value) > 0 {
