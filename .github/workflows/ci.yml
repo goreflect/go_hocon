@@ -1,0 +1,50 @@
+on: [push, pull_request]
+name: CI_dev
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check current docker
+        run: docker version
+
+      - name: checkout
+        uses: actions/checkout@v1
+
+      - name: install go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13.x
+
+      - name: install golangci-lint
+        run: |
+          go get github.com/golangci/golangci-lint/cmd/golangci-lint
+
+      - name: lint
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          ls -la
+          golangci-lint run ./...
+
+      - name: test
+        run: go test ./... -v -covermode=count
+
+      - name: submit coverage
+        run: $(go env GOPATH)/bin/goveralls -service="github" -coverprofile=$GITHUB_WORKSPACE/profile.cov
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Convert coverage to lcov
+        uses: jandelgado/gcov2lcov-action@v1.0.0
+        with:
+          infile: coverage.out
+          outfile: coverage.lcov
+
+      - name: Coveralls
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} #required
+          file: ./coverage.lcov #optional
+          fail_ci_if_error: true #optional (default = false)
+
+      - name: Go Report Card
+        uses: creekorful/goreportcard-action@v0.4
