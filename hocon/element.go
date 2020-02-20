@@ -2,12 +2,12 @@ package hocon
 
 type MightBeAHoconObject interface {
 	IsObject() bool
-	GetObject() *HoconObject
+	GetObject() (*HoconObject, error)
 }
 
 type HoconElement interface {
 	IsString() bool
-	GetString() string
+	GetString() (string, error)
 	IsArray() bool
-	GetArray() []*HoconValue
+	GetArray() ([]*HoconValue, error)
 }

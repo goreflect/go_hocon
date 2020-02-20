@@ -1,11 +1,13 @@
 package hocon
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"strings"
 )
 
-type IncludeCallback func(filename string) *HoconRoot
+type IncludeCallback func(filename string) (*HoconRoot, error)
 
 type Parser struct {
 	reader   *HoconTokenizer
@@ -15,28 +17,37 @@ type Parser struct {
 	substitutions []*HoconSubstitution
 }
 
-func Parse(text string, callback IncludeCallback) *HoconRoot {
+func Parse(text string, callback IncludeCallback) (*HoconRoot, error) {
 	return new(Parser).parseText(text, callback)
 }
 
-func (p *Parser) parseText(text string, callback IncludeCallback) *HoconRoot {
+func (p *Parser) parseText(text string, callback IncludeCallback) (*HoconRoot, error) {
 	p.callback = callback
 	p.root = NewHoconValue()
 	p.reader = NewHoconTokenizer(text)
-	p.reader.PullWhitespaceAndComments()
-	p.parseObject(p.root, true, "")
+	if err := p.reader.PullWhitespaceAndComments(); err != nil {
+		return nil, err
+	}
+
+	if err := p.parseObject(p.root, true, ""); err != nil {
+		return nil, err
+	}
 
 	root := NewHoconRoot(p.root)
 
 	cRoot := root.Value()
 
 	for _, sub := range p.substitutions {
-		res := getNode(cRoot, sub.Path)
+		res, err := getNode(cRoot, sub.Path)
+		if err != nil {
+			return nil, err
+		}
+
 		if res == nil {
-			envVal, exist := os.LookupEnv(sub.OrignialPath)
+			envVal, exist := os.LookupEnv(sub.OriginalPath)
 			if !exist {
 				if !sub.IsOptional {
-					panic("Unresolved substitution:" + sub.Path)
+					return nil, fmt.Errorf("unresolved substitution: %s", sub.Path)
 				}
 			} else {
 				hv := NewHoconValue()
@@ -48,10 +59,10 @@ func (p *Parser) parseText(text string, callback IncludeCallback) *HoconRoot {
 		}
 	}
 
-	return NewHoconRoot(p.root, p.substitutions...)
+	return NewHoconRoot(p.root, p.substitutions...), nil
 }
 
-func (p *Parser) parseObject(owner *HoconValue, root bool, currentPath string) {
+func (p *Parser) parseObject(owner *HoconValue, root bool, currentPath string) error {
 	if !owner.IsObject() {
 		owner.NewValue(NewHoconObject())
 	}
@@ -59,32 +70,62 @@ func (p *Parser) parseObject(owner *HoconValue, root bool, currentPath string) {
 	if owner.IsObject() {
 		rootObj := owner
 		for rootObj.oldValue != nil {
-			oldObj := rootObj.oldValue.GetObject()
-			obj := rootObj.GetObject()
+			oldObj, err := rootObj.oldValue.GetObject()
+			if err != nil {
+				return err
+			}
+
+			obj, err := rootObj.GetObject()
+			if err != nil {
+				return err
+			}
 
 			if oldObj == nil || obj == nil {
 				break
 			}
-			obj.Merge(oldObj)
+			if err := obj.Merge(oldObj); err != nil {
+				return err
+			}
 			rootObj = rootObj.oldValue
 		}
 	}
 
-	currentObject := owner.GetObject()
+	currentObject, err := owner.GetObject()
+	if err != nil {
+		return err
+	}
 
 	for !p.reader.EOF() {
-		t := p.reader.PullNext()
+		t, err := p.reader.PullNext()
+		if err != nil {
+			return err
+		}
 
 		switch t.tokenType {
 		case TokenTypeInclude:
-			included := p.callback(t.value)
+			included, err := p.callback(t.value)
+			if err != nil {
+				return err
+			}
+
 			substitutions := included.substitutions
 			for _, substitution := range substitutions {
 				substitution.Path = currentPath + "." + substitution.Path
 			}
 			p.substitutions = append(p.substitutions, substitutions...)
-			otherObj := included.value.GetObject()
-			owner.GetObject().Merge(otherObj)
+			otherObj, err := included.value.GetObject()
+			if err != nil {
+				return err
+			}
+
+			objectV, err := owner.GetObject()
+			if err != nil {
+				return err
+			}
+
+			if err := objectV.Merge(otherObj); err != nil {
+				return err
+			}
 		case TokenTypeEoF:
 		case TokenTypeKey:
 			value := currentObject.GetOrCreateKey(t.value)
@@ -92,54 +133,64 @@ func (p *Parser) parseObject(owner *HoconValue, root bool, currentPath string) {
 			if len(currentPath) > 0 {
 				nextPath = currentPath + "." + t.value
 			}
-			p.parseKeyContent(value, nextPath)
+			if err := p.parseKeyContent(value, nextPath); err != nil {
+				return err
+			}
 			if !root {
-				return
+				return nil
 			}
 		case TokenTypeObjectEnd:
-			return
+			return nil
 		}
 	}
+	return nil
 }
 
-func (p *Parser) parseKeyContent(value *HoconValue, currentPath string) {
+func (p *Parser) parseKeyContent(value *HoconValue, currentPath string) error {
 	for !p.reader.EOF() {
-		t := p.reader.PullNext()
+		t, err := p.reader.PullNext()
+		if err != nil {
+			return err
+		}
+
 		switch t.tokenType {
 		case TokenTypeDot:
-			p.parseObject(value, false, currentPath)
-			return
+			return p.parseObject(value, false, currentPath)
 		case TokenTypeAssign:
 			{
 				if !value.IsObject() {
 					value.Clear()
 				}
 			}
-			p.ParseValue(value, false, currentPath)
-			return
+			return p.ParseValue(value, false, currentPath)
 		case TokenTypePlusAssign:
 			{
 				if !value.IsObject() {
 					value.Clear()
 				}
 			}
-			p.ParseValue(value, true, currentPath)
-			return
+			return p.ParseValue(value, true, currentPath)
 		case TokenTypeObjectStart:
-			p.parseObject(value, true, currentPath)
-			return
+			return p.parseObject(value, true, currentPath)
 		}
 	}
+	return nil
 }
 
-func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath string) {
+func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath string) error {
 	if p.reader.EOF() {
-		panic("End of file reached while trying to read a value")
+		return errors.New("end of file reached while trying to read a value")
 	}
 
-	p.reader.PullWhitespaceAndComments()
+	if err := p.reader.PullWhitespaceAndComments(); err != nil {
+		return err
+	}
+
 	for p.reader.isValue() {
-		t := p.reader.PullValue()
+		t, err := p.reader.PullValue()
+		if err != nil {
+			return err
+		}
 
 		if isEqualPlus {
 			sub := p.ParseSubstitution(currentPath, false)
@@ -156,9 +207,15 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 			lit := NewHoconLiteral(t.value)
 			owner.AppendValue(lit)
 		case TokenTypeObjectStart:
-			p.parseObject(owner, true, currentPath)
+			if err := p.parseObject(owner, true, currentPath); err != nil {
+				return err
+			}
 		case TokenTypeArrayStart:
-			arr := p.ParseArray(currentPath)
+			arr, err := p.ParseArray(currentPath)
+			if err != nil {
+				return err
+			}
+
 			owner.AppendValue(&arr)
 		case TokenTypeSubstitute:
 			sub := p.ParseSubstitution(t.value, t.isOptional)
@@ -167,35 +224,47 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 		}
 
 		if p.reader.IsSpaceOrTab() {
-			p.ParseTrailingWhitespace(owner)
+			if err := p.ParseTrailingWhitespace(owner); err != nil {
+				return err
+			}
 		}
 	}
 	p.ignoreComma()
 	p.ignoreNewline()
+	return nil
 }
 
-func (p *Parser) ParseTrailingWhitespace(owner *HoconValue) {
-	ws := p.reader.PullSpaceOrTab()
+func (p *Parser) ParseTrailingWhitespace(owner *HoconValue) error {
+	ws, err := p.reader.PullSpaceOrTab()
+	if err != nil {
+		return err
+	}
+
 	if len(ws.value) > 0 {
 		wsList := NewHoconLiteral(ws.value)
 		owner.AppendValue(wsList)
 	}
+	return nil
 }
 
 func (p *Parser) ParseSubstitution(value string, isOptional bool) *HoconSubstitution {
 	return NewHoconSubstitution(value, isOptional)
 }
 
-func (p *Parser) ParseArray(currentPath string) HoconArray {
+func (p *Parser) ParseArray(currentPath string) (HoconArray, error) {
 	arr := NewHoconArray()
 	for !p.reader.EOF() && !p.reader.IsArrayEnd() {
 		v := NewHoconValue()
-		p.ParseValue(v, false, currentPath)
+		if err := p.ParseValue(v, false, currentPath); err != nil {
+			return HoconArray{}, err
+		}
 		arr.values = append(arr.values, v)
-		p.reader.PullWhitespaceAndComments()
+		if err := p.reader.PullWhitespaceAndComments(); err != nil {
+			return HoconArray{}, err
+		}
 	}
 	p.reader.PullArrayEnd()
-	return *arr
+	return *arr, nil
 }
 
 func (p *Parser) ignoreComma() {
@@ -210,21 +279,26 @@ func (p *Parser) ignoreNewline() {
 	}
 }
 
-func getNode(root *HoconValue, path string) *HoconValue {
+func getNode(root *HoconValue, path string) (*HoconValue, error) {
 	elements := splitDottedPathHonouringQuotes(path)
 	currentNode := root
 
 	if currentNode == nil {
-		panic("Current node should not be null")
+		return nil, errors.New("current node should not be null")
 	}
 
 	for _, key := range elements {
-		currentNode = currentNode.GetChildObject(key)
+		var err error
+		currentNode, err = currentNode.GetChildObject(key)
+		if err != nil {
+			return nil, err
+		}
+
 		if currentNode == nil {
-			return nil
+			return nil, nil
 		}
 	}
-	return currentNode
+	return currentNode, nil
 }
 
 func splitDottedPathHonouringQuotes(path string) []string {

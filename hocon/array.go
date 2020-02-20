@@ -1,6 +1,7 @@
 package hocon
 
 import (
+	"errors"
 	"strings"
 )
 
@@ -16,22 +17,22 @@ func (p *HoconArray) IsString() bool {
 	return false
 }
 
-func (p *HoconArray) GetString() string {
-	panic("This element is an array and not a string.")
+func (p *HoconArray) GetString() (string, error) {
+	return "", errors.New("this element is an array and not a string")
 }
 
 func (p *HoconArray) IsArray() bool {
 	return true
 }
 
-func (p *HoconArray) GetArray() []*HoconValue {
-	return p.values
+func (p *HoconArray) GetArray() ([]*HoconValue, error) {
+	return p.values, nil
 }
 
 func (p *HoconArray) String() string {
-	var strs []string
+	var sstr []string
 	for _, v := range p.values {
-		strs = append(strs, v.String())
+		sstr = append(sstr, v.String())
 	}
-	return "[" + strings.Join(strs, ",") + "]"
+	return "[" + strings.Join(sstr, ",") + "]"
 }

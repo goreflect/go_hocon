@@ -8,26 +8,30 @@ type HoconSubstitution struct {
 	Path          string
 	ResolvedValue *HoconValue
 	IsOptional    bool
-	OrignialPath  string
+	OriginalPath  string
 }
 
 func NewHoconSubstitution(path string, isOptional bool) *HoconSubstitution {
-	return &HoconSubstitution{Path: path, OrignialPath: path, IsOptional: isOptional}
+	return &HoconSubstitution{Path: path, OriginalPath: path, IsOptional: isOptional}
 }
 
 func (p *HoconSubstitution) IsString() bool {
 	if p.ResolvedValue == nil {
 		return false
 	}
-	p.checkCycleRef()
+	if err := p.checkCycleRef(); err != nil {
+		return false
+	}
 	return p.ResolvedValue.IsString()
 }
 
-func (p *HoconSubstitution) GetString() string {
+func (p *HoconSubstitution) GetString() (string, error) {
 	if p.ResolvedValue == nil {
-		return ""
+		return "", nil
 	}
-	p.checkCycleRef()
+	if err := p.checkCycleRef(); err != nil {
+		return "", err
+	}
 	return p.ResolvedValue.GetString()
 }
 
@@ -35,12 +39,14 @@ func (p *HoconSubstitution) IsArray() bool {
 	if p.ResolvedValue == nil {
 		return false
 	}
-	p.checkCycleRef()
+	if err := p.checkCycleRef(); err != nil {
+		return false
+	}
 	return p.ResolvedValue.IsArray()
 }
-func (p *HoconSubstitution) GetArray() []*HoconValue {
+func (p *HoconSubstitution) GetArray() ([]*HoconValue, error) {
 	if p.ResolvedValue == nil {
-		return nil
+		return nil, nil
 	}
 	return p.ResolvedValue.GetArray()
 }
@@ -49,22 +55,27 @@ func (p *HoconSubstitution) IsObject() bool {
 	if p.ResolvedValue == nil {
 		return false
 	}
-	p.checkCycleRef()
+	if err := p.checkCycleRef(); err != nil {
+		return false
+	}
 	return p.ResolvedValue.IsObject()
 }
 
-func (p *HoconSubstitution) GetObject() *HoconObject {
+func (p *HoconSubstitution) GetObject() (*HoconObject, error) {
 	if p.ResolvedValue == nil {
-		return nil
+		return nil, nil
 	}
-	p.checkCycleRef()
+	if err := p.checkCycleRef(); err != nil {
+		return nil, err
+	}
 	return p.ResolvedValue.GetObject()
 }
 
-func (p *HoconSubstitution) checkCycleRef() {
+func (p *HoconSubstitution) checkCycleRef() error {
 	if p.hasCycleRef(map[HoconElement]int{}, 1, p.ResolvedValue) {
-		panic(fmt.Sprintf("cycle reference in path of %s", p.Path))
+		return fmt.Errorf("cycle reference in path of %s", p.Path)
 	}
+	return nil
 }
 
 // Temporary solution
