@@ -1,5 +1,12 @@
-on: [push, pull_request]
 name: CI_dev
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+  pull_request:
+
 jobs:
   lint:
     runs-on: ubuntu-latest
