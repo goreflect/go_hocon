@@ -35,6 +35,9 @@ jobs:
       - name: test
         run: go test ./... -v -covermode=count
 
+      - name: install goveralls
+        run: GO111MODULE=off go get -u -v github.com/mattn/goveralls
+
       - name: submit coverage
         run: $(go env GOPATH)/bin/goveralls -service="github" -coverprofile=$GITHUB_WORKSPACE/profile.cov
         env:
