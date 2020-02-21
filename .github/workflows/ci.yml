@@ -35,26 +35,24 @@ jobs:
       - name: test
         run: go test ./... -v -covermode=count
 
-      - name: install goveralls
-        run: GO111MODULE=off go get -u -v github.com/mattn/goveralls
+      - name: calc coverage
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go test ./... -race -coverprofile=coverage.out -covermode=atomic
+          cat coverage.out
 
-      - name: submit coverage
-        run: $(go env GOPATH)/bin/goveralls -service="github" -coverprofile=$GITHUB_WORKSPACE/profile.cov
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Convert coverage to lcov
+      - name: convert coverage to lcov
         uses: jandelgado/gcov2lcov-action@v1.0.0
         with:
           infile: coverage.out
           outfile: coverage.lcov
 
-      - name: Coveralls
+      - name: coveralls
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }} #required
           file: ./coverage.lcov #optional
           fail_ci_if_error: true #optional (default = false)
 
-      - name: Go Report Card
+      - name: go report card
         uses: creekorful/goreportcard-action@v0.4
