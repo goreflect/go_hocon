@@ -67,7 +67,7 @@ func (p *HoconObject) Items() map[string]*HoconValue {
 }
 
 func (p *HoconObject) GetKey(key string) *HoconValue {
-	value, _ := p.items[key]
+	value := p.items[key]
 	return value
 }
 

@@ -51,11 +51,7 @@ func (p *Tokenizer) Matches(pattern string) bool {
 
 	selected := p.text[p.index : p.index+len(pattern)]
 
-	if selected == pattern {
-		return true
-	}
-
-	return false
+	return selected == pattern
 }
 
 func (p *Tokenizer) MatchesMore(patterns []string) bool {

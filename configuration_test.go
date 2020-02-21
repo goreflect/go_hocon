@@ -28,7 +28,7 @@ func TestParseKeyOrder(t *testing.T) {
 						if assert.Nil(t, err) {
 							if order != int32(i) {
 								fmt.Println(conf)
-								t.Fatalf("order not match,group %d, except: %d, real order: %d", g, i, order)
+								t.Errorf("order not match,group %d, except: %d, real order: %d", g, i, order)
 								return
 							}
 						}
