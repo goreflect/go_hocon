@@ -26,11 +26,6 @@ var (
 	simpleLiteral1 = NewHoconLiteral("value1")
 	simpleLiteral2 = NewHoconLiteral("value2")
 	simpleLiteral3 = NewHoconLiteral("value3")
-
-	simpleNestedObject = &HoconObject{
-		keys:  []string{"a"},
-		items: map[string]*HoconValue{"a": {values: []HoconElement{simpleObject}}},
-	}
 )
 
 func getMapOfTwoSimpleLiterals() map[string]*HoconValue {
@@ -48,18 +43,6 @@ func getCycledSubstitution() *HoconSubstitution {
 	cycledSubstitution := &HoconSubstitution{}
 	cycledSubstitution.ResolvedValue = &HoconValue{values: []HoconElement{cycledSubstitution}}
 	return cycledSubstitution
-}
-
-func getCycledObject() *HoconObject {
-	return wrapAllInObject([]string{simpleKey1}, []HoconElement{wrapInValue(getCycledSubstitution())})
-}
-
-func getCycledSubstitutionValue() *HoconValue {
-	return &HoconValue{values: []HoconElement{getCycledSubstitution()}}
-}
-
-func getCycledObjectValue() *HoconValue {
-	return &HoconValue{values: []HoconElement{getCycledObject()}}
 }
 
 // makeHoconObject creates object with text values for test purposes
