@@ -606,7 +606,39 @@ func TestHoconTokenizer_PullInclude(t *testing.T) {
 		want    *Token
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "fails if tokenizer is nil",
+			fields:  fields{Tokenizer: nil},
+			wantErr: true,
+		},
+		{
+			name: "fails if doesn't starts with triple quote",
+			fields: fields{
+				Tokenizer: NewTokenizer(simpleKey1),
+			},
+			wantErr: true,
+		},
+		{
+			name: "returns correct token",
+			fields: fields{
+				Tokenizer: NewTokenizer(includeSpecial + whitespaceTokens[0] + startOfQuotedTextToken + simpleKey1 + endOfTripleQuotedTextToken),
+			},
+			want: NewTokenInclude(simpleKey1),
+		},
+		{
+			name: "fails with incorrect escaped char",
+			fields: fields{
+				Tokenizer: NewTokenizer(`"\z` + simpleKey1 + `"`),
+			},
+			wantErr: true,
+		},
+		{
+			name: "returns correct token with escaped chars",
+			fields: fields{
+				Tokenizer: NewTokenizer(includeSpecial + whitespaceTokens[0] + startOfQuotedTextToken + `\"` + simpleKey1 + endOfTripleQuotedTextToken),
+			},
+			want: NewTokenInclude(`"` + simpleKey1),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -766,6 +798,11 @@ func TestHoconTokenizer_PullQuotedKey(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name:    "fails if tokenizer is nil",
+			fields:  fields{Tokenizer: nil},
+			wantErr: true,
+		},
+		{
 			name: "fails if doesn't starts with quote",
 			fields: fields{
 				Tokenizer: NewTokenizer(simpleKey1),
@@ -821,6 +858,11 @@ func TestHoconTokenizer_PullQuotedText(t *testing.T) {
 		want    *Token
 		wantErr bool
 	}{
+		{
+			name:    "fails if tokenizer is nil",
+			fields:  fields{Tokenizer: nil},
+			wantErr: true,
+		},
 		{
 			name: "fails if doesn't starts with quote",
 			fields: fields{
@@ -1045,18 +1087,55 @@ func TestHoconTokenizer_PullTripleQuotedText(t *testing.T) {
 		Tokenizer *Tokenizer
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
+		name    string
+		fields  fields
+		want    *Token
+		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "fails if tokenizer is nil",
+			fields:  fields{Tokenizer: nil},
+			wantErr: true,
+		},
+		{
+			name: "fails if doesn't starts with triple quote",
+			fields: fields{
+				Tokenizer: NewTokenizer(simpleKey1),
+			},
+			wantErr: true,
+		},
+		{
+			name: "returns correct token",
+			fields: fields{
+				Tokenizer: NewTokenizer(startOfTripleQuotedTextToken + simpleKey1 + endOfTripleQuotedTextToken),
+			},
+			want: NewTokenLiteralValue(simpleKey1),
+		},
+		{
+			name: "fails with incorrect escaped char",
+			fields: fields{
+				Tokenizer: NewTokenizer(`"\z` + simpleKey1 + `"`),
+			},
+			wantErr: true,
+		},
+		{
+			name: "returns correct token with escaped chars",
+			fields: fields{
+				Tokenizer: NewTokenizer(startOfTripleQuotedTextToken + `\t` + simpleKey1 + endOfTripleQuotedTextToken),
+			},
+			want: NewTokenLiteralValue(`\t` + simpleKey1),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
 				Tokenizer: tt.fields.Tokenizer,
 			}
-			got := p.PullTripleQuotedText()
+			got, err := p.PullTripleQuotedText()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PullTripleQuotedText() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("PullTripleQuotedText() got = %v, want %v", got, tt.want)
 			}
@@ -1065,16 +1144,7 @@ func TestHoconTokenizer_PullTripleQuotedText(t *testing.T) {
 }
 
 func TestHoconTokenizer_PullUnquotedKey(t *testing.T) {
-	type fields struct {
-		Tokenizer *Tokenizer
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *Token
-	}{
-		// TODO: Add test cases.
-	}
+	tests := getPullTestsForCorrectTokens(TokenTypeKey, endOfObjectToken, startOfQuotedKeyToken)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &HoconTokenizer{
@@ -1098,7 +1168,32 @@ func TestHoconTokenizer_PullValue(t *testing.T) {
 		want    *Token
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "fails if tokenizer is nil",
+			fields:  fields{Tokenizer: nil},
+			wantErr: true,
+		},
+		{
+			name: "returns correct token",
+			fields: fields{
+				Tokenizer: NewTokenizer(startOfTripleQuotedTextToken + simpleKey1 + endOfTripleQuotedTextToken),
+			},
+			want: NewTokenLiteralValue(simpleKey1),
+		},
+		{
+			name: "fails with incorrect escaped char",
+			fields: fields{
+				Tokenizer: NewTokenizer(`"\z` + simpleKey1 + `"`),
+			},
+			wantErr: true,
+		},
+		{
+			name: "returns correct token with escaped chars",
+			fields: fields{
+				Tokenizer: NewTokenizer(startOfTripleQuotedTextToken + `\t` + simpleKey1 + endOfTripleQuotedTextToken),
+			},
+			want: NewTokenLiteralValue(`\t` + simpleKey1),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

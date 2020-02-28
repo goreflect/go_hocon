@@ -408,7 +408,10 @@ func (p *HoconTokenizer) IsWhitespaceOrComment() bool {
 	return p.IsWhitespace() || p.IsStartOfComment()
 }
 
-func (p *HoconTokenizer) PullTripleQuotedText() *Token {
+func (p *HoconTokenizer) PullTripleQuotedText() (*Token, error) {
+	if !p.IsStartOfTripleQuotedText() {
+		return nil, fmt.Errorf("expected start of triple quoted text token, got %s", string(p.Peek()))
+	}
 	buf := bytes.NewBuffer(nil)
 	p.Take(3)
 	for !p.EOF() && !p.Matches(endOfTripleQuotedTextToken) {
@@ -419,12 +422,12 @@ func (p *HoconTokenizer) PullTripleQuotedText() *Token {
 		p.TakeOne()
 	}
 	p.Take(3)
-	return NewTokenLiteralValue(buf.String())
+	return NewTokenLiteralValue(buf.String()), nil
 }
 
 func (p *HoconTokenizer) PullQuotedText() (*Token, error) {
 	if !p.IsStartOfQuotedText() {
-		return nil, fmt.Errorf("expected start of quoted text token, got %v", p.Peek())
+		return nil, fmt.Errorf("expected start of quoted text token, got %s", string(p.Peek()))
 	}
 	buf := bytes.NewBuffer(nil)
 	p.TakeOne()
@@ -453,7 +456,7 @@ func (p *HoconTokenizer) PullQuotedText() (*Token, error) {
 
 func (p *HoconTokenizer) PullQuotedKey() (*Token, error) {
 	if !p.isStartOfQuotedKey() {
-		return nil, fmt.Errorf("expected start of quoted key token, got %v", p.Peek())
+		return nil, fmt.Errorf("expected start of quoted key token, got %s", string(p.Peek()))
 	}
 	buf := bytes.NewBuffer(nil)
 	p.TakeOne()
@@ -481,6 +484,9 @@ func (p *HoconTokenizer) PullQuotedKey() (*Token, error) {
 }
 
 func (p *HoconTokenizer) PullInclude() (*Token, error) {
+	if !p.IsInclude() {
+		return nil, fmt.Errorf("expected include token, got %s", string(p.Peek()))
+	}
 	p.Take(len(includeSpecial))
 	p.PullWhitespaceAndComments()
 	rest, err := p.PullQuotedText()
@@ -534,7 +540,7 @@ func (p *HoconTokenizer) PullValue() (*Token, error) {
 	}
 
 	if p.IsStartOfTripleQuotedText() {
-		return p.PullTripleQuotedText(), nil
+		return p.PullTripleQuotedText()
 	}
 
 	if p.IsStartOfQuotedText() {
