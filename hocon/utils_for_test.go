@@ -1,10 +1,13 @@
 package hocon
 
 const (
-	simpleKey1 = "key1"
-	simpleKey2 = "key2"
-	simpleKey3 = "key3"
-	specials   = "`-=~!@#$%^&*()_+[]\\{}|\"':;,./<>?"
+	simpleKey1   = "key1"
+	simpleKey2   = "key2"
+	simpleKey3   = "key3"
+	simpleValue1 = "value1"
+	simpleValue2 = "value2"
+	simpleValue3 = "value3"
+	specials     = "`-=~!@#$%^&*()_+[]\\{}|\"':;,./<>?"
 )
 
 var (
@@ -17,15 +20,11 @@ var (
 		},
 	}}
 
-	simpleObject = makeHoconObject([]string{"key"}, []string{"value"})
-	//simpleObject = &HoconObject{
-	//	keys:  []string{"a"},
-	//	items: map[string]*HoconValue{"a": {values: []HoconElement{NewHoconLiteral("b")}}},
-	//}
+	simpleObject = makeHoconObject([]string{simpleKey1}, []string{simpleValue1})
 
-	simpleLiteral1 = NewHoconLiteral("value1")
-	simpleLiteral2 = NewHoconLiteral("value2")
-	simpleLiteral3 = NewHoconLiteral("value3")
+	simpleLiteral1 = NewHoconLiteral(simpleValue1)
+	simpleLiteral2 = NewHoconLiteral(simpleValue2)
+	simpleLiteral3 = NewHoconLiteral(simpleValue3)
 )
 
 func getMapOfTwoSimpleLiterals() map[string]*HoconValue {
