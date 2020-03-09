@@ -25,9 +25,7 @@ func (p *Parser) parseText(text string, callback IncludeCallback) (*HoconRoot, e
 	p.callback = callback
 	p.root = NewHoconValue()
 	p.reader = NewHoconTokenizer(text)
-	if err := p.reader.PullWhitespaceAndComments(); err != nil {
-		return nil, err
-	}
+	p.reader.PullWhitespaceAndComments()
 
 	if err := p.parseObject(p.root, true, ""); err != nil {
 		return nil, err
@@ -63,11 +61,14 @@ func (p *Parser) parseText(text string, callback IncludeCallback) (*HoconRoot, e
 }
 
 func (p *Parser) parseObject(owner *HoconValue, root bool, currentPath string) error {
-	if !owner.IsObject() {
-		owner.NewValue(NewHoconObject())
+	isObject, err2 := owner.IsObject()
+	if err2 != nil {
+		return err2
 	}
 
-	if owner.IsObject() {
+	if !isObject {
+		owner.NewValue(NewHoconObject())
+	} else {
 		rootObj := owner
 		for rootObj.oldValue != nil {
 			oldObj, err := rootObj.oldValue.GetObject()
@@ -158,14 +159,24 @@ func (p *Parser) parseKeyContent(value *HoconValue, currentPath string) error {
 			return p.parseObject(value, false, currentPath)
 		case TokenTypeAssign:
 			{
-				if !value.IsObject() {
+				isObject, err := value.IsObject()
+				if err != nil {
+					return err
+				}
+
+				if !isObject {
 					value.Clear()
 				}
 			}
 			return p.ParseValue(value, false, currentPath)
 		case TokenTypePlusAssign:
 			{
-				if !value.IsObject() {
+				isObject, err := value.IsObject()
+				if err != nil {
+					return err
+				}
+
+				if !isObject {
 					value.Clear()
 				}
 			}
@@ -182,9 +193,7 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 		return errors.New("end of file reached while trying to read a value")
 	}
 
-	if err := p.reader.PullWhitespaceAndComments(); err != nil {
-		return err
-	}
+	p.reader.PullWhitespaceAndComments()
 
 	for p.reader.isValue() {
 		t, err := p.reader.PullValue()
@@ -201,7 +210,12 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 		switch t.tokenType {
 		case TokenTypeEoF:
 		case TokenTypeLiteralValue:
-			if owner.IsObject() {
+			isObject, err := owner.IsObject()
+			if err != nil {
+				return err
+			}
+
+			if isObject {
 				owner.Clear()
 			}
 			lit := NewHoconLiteral(t.value)
@@ -224,9 +238,7 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 		}
 
 		if p.reader.IsSpaceOrTab() {
-			if err := p.ParseTrailingWhitespace(owner); err != nil {
-				return err
-			}
+			p.ParseTrailingWhitespace(owner)
 		}
 	}
 	p.ignoreComma()
@@ -234,17 +246,13 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 	return nil
 }
 
-func (p *Parser) ParseTrailingWhitespace(owner *HoconValue) error {
-	ws, err := p.reader.PullSpaceOrTab()
-	if err != nil {
-		return err
-	}
+func (p *Parser) ParseTrailingWhitespace(owner *HoconValue) {
+	ws := p.reader.PullSpaceOrTab()
 
 	if len(ws.value) > 0 {
 		wsList := NewHoconLiteral(ws.value)
 		owner.AppendValue(wsList)
 	}
-	return nil
 }
 
 func (p *Parser) ParseSubstitution(value string, isOptional bool) *HoconSubstitution {
@@ -259,9 +267,7 @@ func (p *Parser) ParseArray(currentPath string) (HoconArray, error) {
 			return HoconArray{}, err
 		}
 		arr.values = append(arr.values, v)
-		if err := p.reader.PullWhitespaceAndComments(); err != nil {
-			return HoconArray{}, err
-		}
+		p.reader.PullWhitespaceAndComments()
 	}
 	p.reader.PullArrayEnd()
 	return *arr, nil

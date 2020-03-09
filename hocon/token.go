@@ -19,10 +19,8 @@ const (
 	TokenTypeComma
 	TokenTypeSubstitute
 	TokenTypeInclude
-)
 
-var (
-	DefaultToken = Token{}
+	unknownTokenType = "<<unknown token type>>"
 )
 
 type Token struct {
@@ -47,19 +45,19 @@ func NewToken(v interface{}) *Token {
 	return nil
 }
 
-func (p *Token) Key(key string) *Token {
+func NewTokenKey(key string) *Token {
 	return &Token{tokenType: TokenTypeKey, value: key}
 }
 
-func (p *Token) Substitution(path string, isOptional bool) *Token {
+func NewTokenSubstitution(path string, isOptional bool) *Token {
 	return &Token{tokenType: TokenTypeSubstitute, value: path, isOptional: isOptional}
 }
 
-func (p *Token) LiteralValue(value string) *Token {
+func NewTokenLiteralValue(value string) *Token {
 	return &Token{tokenType: TokenTypeLiteralValue, value: value}
 }
 
-func (p *Token) Include(path string) *Token {
+func NewTokenInclude(path string) *Token {
 	return &Token{tokenType: TokenTypeInclude, value: path}
 }
 
@@ -98,5 +96,5 @@ func StringTokenType(tokenType TokenType) string {
 	case TokenTypeInclude:
 		return "TokenTypeInclude"
 	}
-	return "<<unknown token type>>"
+	return unknownTokenType
 }

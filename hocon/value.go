@@ -51,7 +51,7 @@ func NewHoconValue() *HoconValue {
 }
 
 func (p *HoconValue) IsEmpty() bool {
-	if len(p.values) == 0 {
+	if p == nil || len(p.values) == 0 {
 		return true
 	}
 
@@ -73,6 +73,10 @@ func (p *HoconValue) AtKey(key string) *HoconRoot {
 }
 
 func (p *HoconValue) IsString() bool {
+	if p == nil {
+		return false
+	}
+
 	strCount := 0
 
 	for _, v := range p.values {
@@ -203,7 +207,12 @@ func (p *HoconValue) ToString(indent int) (string, error) {
 		return p.quoteIfNeeded(stringV), nil
 	}
 
-	if p.IsObject() {
+	isObject, err := p.IsObject()
+	if err != nil {
+		return "", err
+	}
+
+	if isObject {
 		indentString := strings.Repeat(" ", indent*2)
 		objectV, err := p.GetObject()
 		if err != nil {
@@ -215,7 +224,7 @@ func (p *HoconValue) ToString(indent int) (string, error) {
 			return "", err
 		}
 
-		return fmt.Sprintf("{\r\n%s%s}", indentString, stringV), nil
+		return fmt.Sprintf("{%s%s%s}", newLine, stringV, indentString), nil
 	}
 
 	if p.IsArray() {
@@ -237,11 +246,15 @@ func (p *HoconValue) ToString(indent int) (string, error) {
 		return "[" + strings.Join(sstr, ",") + "]", nil
 	}
 
+	if p.IsEmpty() {
+		return "", nil
+	}
+
 	return "<<unknown value>>", nil
 }
 
 func (p *HoconValue) GetObject() (*HoconObject, error) {
-	if len(p.values) == 0 {
+	if p == nil || len(p.values) == 0 {
 		return nil, nil
 	}
 
@@ -259,21 +272,28 @@ func (p *HoconValue) GetObject() (*HoconObject, error) {
 	}
 
 	if sub, ok := raw.(MightBeAHoconObject); ok {
-		if sub != nil && sub.IsObject() {
-			return sub.GetObject()
+		if sub != nil {
+			isObject, err := sub.IsObject()
+			if err != nil {
+				return nil, err
+			}
+
+			if isObject {
+				return sub.GetObject()
+			}
 		}
 	}
 
 	return nil, nil
 }
 
-func (p *HoconValue) IsObject() bool {
+func (p *HoconValue) IsObject() (bool, error) {
 	objectV, err := p.GetObject()
 	if err != nil {
-		return false
+		return false, err
 	}
 
-	return objectV != nil
+	return objectV != nil, nil
 }
 
 func (p *HoconValue) AppendValue(value HoconElement) {
@@ -507,7 +527,7 @@ func (p *HoconValue) GetStringList() ([]string, error) {
 func (p *HoconValue) GetArray() ([]*HoconValue, error) {
 	var items []*HoconValue
 
-	if len(p.values) == 0 {
+	if p == nil || len(p.values) == 0 {
 		return items, nil
 	}
 

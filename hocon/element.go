@@ -1,7 +1,7 @@
 package hocon
 
 type MightBeAHoconObject interface {
-	IsObject() bool
+	IsObject() (bool, error)
 	GetObject() (*HoconObject, error)
 }
 
