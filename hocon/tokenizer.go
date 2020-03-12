@@ -109,6 +109,8 @@ func (p *Tokenizer) EOF() bool {
 	return p.index >= len(p.text)
 }
 
+// Matches find any of the given patterns in tokenizer starting from the current peak,
+// returns true when it is found, false - otherwise
 func (p *Tokenizer) Matches(patterns ...string) bool {
 	if p == nil {
 		return false
@@ -129,7 +131,9 @@ func (p *Tokenizer) Matches(patterns ...string) bool {
 	return false
 }
 
-func (p *Tokenizer) MatchesMore(patterns []string) bool {
+// MatchesMore find any of the given patterns in tokenizer starting from the current peak,
+// returns true when it is found and followed by any other character, false - otherwise
+func (p *Tokenizer) MatchesMore(patterns ...string) bool {
 	if p == nil {
 		return false
 	}
@@ -347,7 +351,7 @@ func (p *HoconTokenizer) IsEndOfObject() bool {
 }
 
 func (p *HoconTokenizer) IsAssignment() bool {
-	return p.MatchesMore(assignmentTokens)
+	return p.MatchesMore(assignmentTokens...)
 }
 
 func (p *HoconTokenizer) IsPlusAssignment() bool {
@@ -531,7 +535,7 @@ func (p *HoconTokenizer) pullEscapeSequence() (string, error) {
 }
 
 func (p *HoconTokenizer) IsStartOfComment() bool {
-	return p.MatchesMore(startOfCommentTokens)
+	return p.MatchesMore(startOfCommentTokens...)
 }
 
 func (p *HoconTokenizer) PullValue() (*Token, error) {
@@ -567,7 +571,7 @@ func (p *HoconTokenizer) PullValue() (*Token, error) {
 }
 
 func (p *HoconTokenizer) IsSubstitutionStart() bool {
-	return p.MatchesMore(substitutionStartTokens)
+	return p.MatchesMore(substitutionStartTokens...)
 }
 
 func (p *HoconTokenizer) IsInclude() bool {
@@ -616,7 +620,7 @@ func (p *HoconTokenizer) pullSubstitution() *Token {
 }
 
 func (p *HoconTokenizer) IsSpaceOrTab() bool {
-	return p.MatchesMore(spaceOrTabTokens)
+	return p.MatchesMore(spaceOrTabTokens...)
 }
 
 func (p *HoconTokenizer) IsStartSimpleValue() bool {

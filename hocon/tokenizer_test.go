@@ -1446,38 +1446,39 @@ func TestTokenizer_EOF(t *testing.T) {
 	}
 }
 
-func TestTokenizer_Matches(t *testing.T) {
-	type fields struct {
-		text       string
-		index      int
-		indexStack *Stack
-	}
-	type args struct {
-		pattern string
-	}
+func TestTokenizer_Matches_Extra(t *testing.T) {
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   bool
+		name      string
+		tokenizer *Tokenizer
+		patterns  []string
+		want      bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:     "returns false if tokenizer is nil",
+			patterns: []string{"a"},
+			want:     false,
+		},
+		{
+			name:      "returns false if patterns are empty",
+			patterns:  []string{},
+			tokenizer: &Tokenizer{text: "A"},
+			want:      false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Tokenizer{
-				text:       tt.fields.text,
-				index:      tt.fields.index,
-				indexStack: tt.fields.indexStack,
-			}
-			if got := p.Matches(tt.args.pattern); got != tt.want {
+			if got := tt.tokenizer.Matches(tt.patterns...); got != tt.want {
 				t.Errorf("Matches() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestTokenizer_MatchesMore(t *testing.T) {
+func TestTokenizer_Matches(t *testing.T) {
+	aPattern := []string{"a"}
+	abPatterns := []string{"a", "b"}
+	edPattern := []string{"ed"}
+
 	type fields struct {
 		text       string
 		index      int
@@ -1492,7 +1493,119 @@ func TestTokenizer_MatchesMore(t *testing.T) {
 		args   args
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "returns false if token contains pattern before the current peak",
+			fields: fields{
+				text:  "apple",
+				index: 1,
+			},
+			args: args{patterns: aPattern},
+			want: false,
+		},
+		{
+			name: "returns false if token is shorter than pattern",
+			fields: fields{
+				text: "a",
+			},
+			args: args{patterns: edPattern},
+			want: false,
+		},
+		{
+			name: "returns true if token equals pattern",
+			fields: fields{
+				text: "a",
+			},
+			args: args{patterns: aPattern},
+			want: true,
+		},
+		{
+			name: "returns false if token different from pattern",
+			fields: fields{
+				text: "b",
+			},
+			args: args{patterns: aPattern},
+			want: false,
+		},
+		{
+			name: "returns true if token starts with pattern",
+			fields: fields{
+				text: "apple",
+			},
+			args: args{patterns: aPattern},
+			want: true,
+		},
+		{
+			name: "returns false if token contains pattern in the middle",
+			fields: fields{
+				text: "bananas",
+			},
+			args: args{patterns: aPattern},
+			want: false,
+		},
+		{
+			name: "returns true if token equals second pattern",
+			fields: fields{
+				text: "b",
+			},
+			args: args{patterns: abPatterns},
+			want: true,
+		},
+		{
+			name: "returns false if token different from second pattern",
+			fields: fields{
+				text: "corn",
+			},
+			args: args{patterns: abPatterns},
+			want: false,
+		},
+		{
+			name: "returns true if token starts with second pattern",
+			fields: fields{
+				text: "bull",
+			},
+			args: args{patterns: abPatterns},
+			want: true,
+		},
+		{
+			name: "returns false if token contains second pattern in the middle",
+			fields: fields{
+				text: "cobol",
+			},
+			args: args{patterns: abPatterns},
+			want: false,
+		},
+		{
+			name: "returns true if token equals long pattern",
+			fields: fields{
+				text: "ed",
+			},
+			args: args{patterns: edPattern},
+			want: true,
+		},
+		{
+			name: "returns false if token different from long pattern",
+			fields: fields{
+				text: "corn",
+			},
+			args: args{patterns: edPattern},
+			want: false,
+		},
+		{
+			name: "returns true if token starts with long pattern",
+			fields: fields{
+				text: "edward",
+			},
+			args: args{patterns: edPattern},
+			want: true,
+		},
+		{
+			name: "returns false if token contains second pattern in the middle",
+			fields: fields{
+				text: "medicine",
+			},
+			args: args{patterns: edPattern},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1501,7 +1614,182 @@ func TestTokenizer_MatchesMore(t *testing.T) {
 				index:      tt.fields.index,
 				indexStack: tt.fields.indexStack,
 			}
-			if got := p.MatchesMore(tt.args.patterns); got != tt.want {
+			if got := p.Matches(tt.args.patterns...); got != tt.want {
+				t.Errorf("Matches() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTokenizer_MatchesMore_Extra(t *testing.T) {
+	tests := []struct {
+		name      string
+		tokenizer *Tokenizer
+		patterns  []string
+		want      bool
+	}{
+		{
+			name:     "returns false if tokenizer is nil",
+			patterns: []string{"a"},
+			want:     false,
+		},
+		{
+			name:      "returns false if patterns are empty",
+			patterns:  []string{},
+			tokenizer: &Tokenizer{text: "A"},
+			want:      false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.tokenizer.MatchesMore(tt.patterns...); got != tt.want {
+				t.Errorf("Matches() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTokenizer_MatchesMore(t *testing.T) {
+	aPattern := []string{"a"}
+	abPatterns := []string{"a", "b"}
+	edPattern := []string{"ed"}
+
+	type fields struct {
+		text       string
+		index      int
+		indexStack *Stack
+	}
+	type args struct {
+		patterns []string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "returns false if token contains pattern before the current peak",
+			fields: fields{
+				text:  "apple",
+				index: 1,
+			},
+			args: args{patterns: aPattern},
+			want: false,
+		},
+		{
+			name: "returns false if token is shorter than pattern",
+			fields: fields{
+				text: "a",
+			},
+			args: args{patterns: edPattern},
+			want: false,
+		},
+		{
+			name: "returns false if token equals pattern",
+			fields: fields{
+				text: "a",
+			},
+			args: args{patterns: aPattern},
+			want: false,
+		},
+		{
+			name: "returns false if token different from pattern",
+			fields: fields{
+				text: "b",
+			},
+			args: args{patterns: aPattern},
+			want: false,
+		},
+		{
+			name: "returns true if token starts with pattern",
+			fields: fields{
+				text: "apple",
+			},
+			args: args{patterns: aPattern},
+			want: true,
+		},
+		{
+			name: "returns false if token contains pattern in the middle",
+			fields: fields{
+				text: "bananas",
+			},
+			args: args{patterns: aPattern},
+			want: false,
+		},
+		{
+			name: "returns false if token equals second pattern",
+			fields: fields{
+				text: "b",
+			},
+			args: args{patterns: abPatterns},
+			want: false,
+		},
+		{
+			name: "returns false if token different from second pattern",
+			fields: fields{
+				text: "corn",
+			},
+			args: args{patterns: abPatterns},
+			want: false,
+		},
+		{
+			name: "returns true if token starts with second pattern",
+			fields: fields{
+				text: "bull",
+			},
+			args: args{patterns: abPatterns},
+			want: true,
+		},
+		{
+			name: "returns false if token contains second pattern in the middle",
+			fields: fields{
+				text: "cobol",
+			},
+			args: args{patterns: abPatterns},
+			want: false,
+		},
+		{
+			name: "returns false if token equals long pattern",
+			fields: fields{
+				text: "ed",
+			},
+			args: args{patterns: edPattern},
+			want: false,
+		},
+		{
+			name: "returns false if token different from long pattern",
+			fields: fields{
+				text: "corn",
+			},
+			args: args{patterns: edPattern},
+			want: false,
+		},
+		{
+			name: "returns true if token starts with long pattern",
+			fields: fields{
+				text: "edward",
+			},
+			args: args{patterns: edPattern},
+			want: true,
+		},
+		{
+			name: "returns false if token contains second pattern in the middle",
+			fields: fields{
+				text: "medicine",
+			},
+			args: args{patterns: edPattern},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Tokenizer{
+				text:       tt.fields.text,
+				index:      tt.fields.index,
+				indexStack: tt.fields.indexStack,
+			}
+			if got := p.MatchesMore(tt.args.patterns...); got != tt.want {
 				t.Errorf("MatchesMore() = %v, want %v", got, tt.want)
 			}
 		})
