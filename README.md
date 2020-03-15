@@ -1,6 +1,6 @@
-HOCON (Human-Optimized Config Object Notation)
-=====
-[![GoDoc](https://godoc.org/github.com/go-akka/configuration?status.svg)](https://godoc.org/github.com/go-akka/configuration)
+#HOCON (Human-Optimized Config Object Notation)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/goreflect/go_hocon)
+
 [HOCON Docs](https://github.com/typesafehub/config/blob/master/HOCON.md).
 
 > Currently, some features are not implemented, the API might be a little changed in the future.
@@ -13,7 +13,7 @@ package main
 
 import (
   "fmt"
-  "github.com/go-akka/configuration"
+  "github.com/goreflect/go_hocon"
 )
 
 var configText = `
@@ -60,23 +60,52 @@ plus-equal-array+=[bar, ${HOME}]
 `
 
 func main() {
-  conf := configuration.ParseString(configText)
+	conf, _ := configuration.ParseString(configText)
 
-  fmt.Println("config.one-second:", conf.GetTimeDuration("config.one-second"))
-  fmt.Println("config.one-day:", conf.GetTimeDuration("config.one-day"))
-  fmt.Println("config.array:", conf.GetStringList("config.array"))
-  fmt.Println("config.bar:", conf.GetString("config.bar"))
-  fmt.Println("config.foo:", conf.GetString("config.foo"))
-  fmt.Println("config.number:", conf.GetInt64("config.number"))
-  fmt.Println("config.object.a:", conf.GetString("config.object.a"))
-  fmt.Println("config.object.c.d:", conf.GetString("config.object.c.d"))
-  fmt.Println("config.object.c.f:", conf.GetString("config.object.c.f"))
-  fmt.Println("self-ref:", conf.GetInt64List("self-ref"))
-  fmt.Println("byte-size:", conf.GetByteSize("byte-size"))
-  fmt.Println("home:", conf.GetString("home"))
-  fmt.Println("default:", conf.GetString("none", "default-value"))
-  fmt.Println("plus-equal:", conf.GetString("plus-equal"))
-  fmt.Println("plus-equal-array:", conf.GetStringList("plus-equal-array"))
+	duration, _ := conf.GetTimeDuration("config.one-second")
+	fmt.Println("config.one-second:", duration)
+
+	timeDuration, _ := conf.GetTimeDuration("config.one-day")
+	fmt.Println("config.one-day:", timeDuration)
+
+	list, _ := conf.GetStringList("config.array")
+	fmt.Println("config.array:", list)
+
+	getString, _ := conf.GetString("config.bar")
+	fmt.Println("config.bar:", getString)
+
+	s, _ := conf.GetString("config.foo")
+	fmt.Println("config.foo:", s)
+
+	getInt64, _ := conf.GetInt64("config.number")
+	fmt.Println("config.number:", getInt64)
+
+	s2, _ := conf.GetString("config.object.a")
+	fmt.Println("config.object.a:", s2)
+
+	s3, _ := conf.GetString("config.object.c.d")
+	fmt.Println("config.object.c.d:", s3)
+
+	s4, _ := conf.GetString("config.object.c.f")
+	fmt.Println("config.object.c.f:", s4)
+
+	int64List, _ := conf.GetInt64List("self-ref")
+	fmt.Println("self-ref:", int64List)
+
+	size, _ := conf.GetByteSize("byte-size")
+	fmt.Println("byte-size:", size)
+
+	s5, _ := conf.GetString("home")
+	fmt.Println("home:", s5)
+
+	s6, _ := conf.GetString("none", "default-value")
+	fmt.Println("default:", s6)
+
+	s7, _ := conf.GetString("plus-equal")
+	fmt.Println("plus-equal:", s7)
+
+	stringList, _ := conf.GetStringList("plus-equal-array")
+	fmt.Println("plus-equal-array:", stringList)
 }
 
 ```
@@ -94,8 +123,8 @@ config.object.c.d: a
 config.object.c.f: valueF
 self-ref: [1 2]
 byte-size: 10485760
-home: /Users/zeal
+home: /home/user
 default: default-value
 plus-equal: foobar
-plus-equal-array: [foo bar /Users/zeal]
+plus-equal-array: [foo bar /home/user]
 ```
