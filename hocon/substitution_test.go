@@ -22,11 +22,11 @@ func TestHoconSubstitution_GetArray(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "returns nil if it contains nothing",
+			name: "fails if it contains nothing",
 			fields: fields{
 				ResolvedValue: nil,
 			},
-			want: nil,
+			wantErr: true,
 		},
 		{
 			name: "returns nil if it contains not an array",
@@ -104,25 +104,25 @@ func TestHoconSubstitution_GetObject(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "returns nil if it contains nothing",
+			name: "fails if it contains nothing",
 			fields: fields{
 				ResolvedValue: nil,
 			},
-			want: nil,
+			wantErr: true,
 		},
 		{
-			name: "returns nil if it contains not an object",
+			name: "fails if it contains not an object",
 			fields: fields{
 				ResolvedValue: wrapInValue(simpleLiteral1),
 			},
-			want: nil,
+			wantErr: true,
 		},
 		{
-			name: "returns nil if it contains an element before an object",
+			name: "fails if it contains an element before an object",
 			fields: fields{
 				ResolvedValue: wrapInValue(simpleLiteral1, simpleObject),
 			},
-			want: nil,
+			wantErr: true,
 		},
 		{
 			name: "returns object if it contains object",
@@ -320,7 +320,7 @@ func TestHoconSubstitution_IsObject(t *testing.T) {
 				IsOptional:    tt.fields.IsOptional,
 				OriginalPath:  tt.fields.OriginalPath,
 			}
-			if got, _ := p.IsObject(); got != tt.want {
+			if got := p.IsObject(); got != tt.want {
 				t.Errorf("IsObject() = %v, want %v", got, tt.want)
 			}
 		})
@@ -364,6 +364,13 @@ func TestHoconSubstitution_IsString(t *testing.T) {
 				ResolvedValue: wrapInValue(wrapInSubstitution(wrapInSubstitution(simpleLiteral1))),
 			},
 			want: true,
+		},
+		{
+			name: "returns false on cycled reference",
+			fields: fields{
+				ResolvedValue: wrapInValue(getCycledSubstitution()),
+			},
+			want: false,
 		},
 	}
 	for _, tt := range tests {

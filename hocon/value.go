@@ -11,6 +11,7 @@ import (
 )
 
 const infinite = "infinite"
+const unknownValue = "<<unknown value>>"
 
 var (
 	_Num1000 = big.NewInt(1000)
@@ -110,6 +111,7 @@ func (p *HoconValue) topValueOfSub(v interface{}) HoconElement {
 	return v.(HoconElement)
 }
 
+// concatString returns all inner elements.GetString values joined
 func (p *HoconValue) concatString() (string, error) {
 	var concat string
 	for _, v := range p.values {
@@ -189,73 +191,63 @@ func (p *HoconValue) GetByteSize() (*big.Int, error) {
 }
 
 func (p *HoconValue) String() string {
-	stringV, err := p.ToString(0)
-	if err != nil {
-		return fmt.Sprintf("cannot get string: %s", err.Error())
-	}
-
-	return stringV
+	return p.ToString(0)
 }
 
-func (p *HoconValue) ToString(indent int) (string, error) {
+// ToString returns text representation of HoconValue
+func (p *HoconValue) ToString(indent int) string {
 	if p.IsString() {
 		stringV, err := p.GetString()
+		// must not return error after checking p.IsString()
 		if err != nil {
-			return "", err
+			panic(err)
 		}
 
-		return p.quoteIfNeeded(stringV), nil
+		return p.quoteIfNeeded(stringV)
 	}
 
-	isObject, err := p.IsObject()
-	if err != nil {
-		return "", err
-	}
-
-	if isObject {
+	if p.IsObject() {
 		indentString := strings.Repeat(" ", indent*2)
 		objectV, err := p.GetObject()
+		// must not return error after checking p.IsObject()
 		if err != nil {
-			return "", err
+			panic(err)
 		}
 
-		stringV, err := objectV.ToString(indent + 1)
-		if err != nil {
-			return "", err
-		}
+		stringV := objectV.ToString(indent + 1)
 
-		return fmt.Sprintf("{%s%s%s}", newLine, stringV, indentString), nil
+		return fmt.Sprintf("{%s%s%s}", newLine, stringV, indentString)
 	}
 
 	if p.IsArray() {
 		arrayV, err := p.GetArray()
+		// must not return error after checking p.IsArray()
 		if err != nil {
-			return "", err
+			panic(err)
 		}
 
 		var sstr []string
 		for _, v := range arrayV {
-			stringV, err := v.ToString(indent + 1)
-			if err != nil {
-				return "", err
-			}
-
-			sstr = append(sstr, stringV)
+			sstr = append(sstr, v.ToString(indent+1))
 		}
 
-		return "[" + strings.Join(sstr, ",") + "]", nil
+		return "[" + strings.Join(sstr, ",") + "]"
 	}
 
 	if p.IsEmpty() {
-		return "", nil
+		return ""
 	}
 
-	return "<<unknown value>>", nil
+	return unknownValue
 }
 
 func (p *HoconValue) GetObject() (*HoconObject, error) {
-	if p == nil || len(p.values) == 0 {
-		return nil, nil
+	if p == nil {
+		return nil, fmt.Errorf("cannot get object from nil HoconValue")
+	}
+
+	if len(p.values) == 0 {
+		return nil, fmt.Errorf("cannot get object from empty HoconValue")
 	}
 
 	raw := p.values[0]
@@ -267,33 +259,28 @@ func (p *HoconValue) GetObject() (*HoconObject, error) {
 
 	if s, ok := raw.(*HoconSubstitution); ok {
 		if s.ResolvedValue == nil {
-			return nil, nil
+			return nil, fmt.Errorf("cannot get object from nil HoconSubstitution.ResolvedValue")
 		}
 	}
 
 	if sub, ok := raw.(MightBeAHoconObject); ok {
 		if sub != nil {
-			isObject, err := sub.IsObject()
-			if err != nil {
-				return nil, err
-			}
-
-			if isObject {
+			if isObject := sub.IsObject(); isObject {
 				return sub.GetObject()
 			}
 		}
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("HoconValue does not contain any valid object")
 }
 
-func (p *HoconValue) IsObject() (bool, error) {
+func (p *HoconValue) IsObject() bool {
 	objectV, err := p.GetObject()
 	if err != nil {
-		return false, err
+		return false
 	}
 
-	return objectV != nil, nil
+	return objectV != nil
 }
 
 func (p *HoconValue) AppendValue(value HoconElement) {
@@ -326,7 +313,13 @@ func (p *HoconValue) GetBoolean() (bool, error) {
 
 func (p *HoconValue) GetString() (string, error) {
 	if p.IsString() {
-		return p.concatString()
+		result, err := p.concatString()
+		// must not return error after checking p.IsString()
+		if err != nil {
+			panic(err)
+		}
+
+		return result, nil
 	}
 	return "", nil
 }
@@ -526,8 +519,11 @@ func (p *HoconValue) GetStringList() ([]string, error) {
 
 func (p *HoconValue) GetArray() ([]*HoconValue, error) {
 	var items []*HoconValue
+	if p == nil {
+		return nil, fmt.Errorf("cannot get array from nil HoconValue")
+	}
 
-	if p == nil || len(p.values) == 0 {
+	if len(p.values) == 0 {
 		return items, nil
 	}
 
@@ -550,10 +546,6 @@ func (p *HoconValue) GetChildObject(key string) (*HoconValue, error) {
 	objectV, err := p.GetObject()
 	if err != nil {
 		return nil, err
-	}
-
-	if objectV == nil {
-		return nil, nil
 	}
 
 	return objectV.GetKey(key), nil

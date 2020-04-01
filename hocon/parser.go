@@ -61,12 +61,7 @@ func (p *Parser) parseText(text string, callback IncludeCallback) (*HoconRoot, e
 }
 
 func (p *Parser) parseObject(owner *HoconValue, root bool, currentPath string) error {
-	isObject, err2 := owner.IsObject()
-	if err2 != nil {
-		return err2
-	}
-
-	if !isObject {
+	if !owner.IsObject() {
 		owner.NewValue(NewHoconObject())
 	} else {
 		rootObj := owner
@@ -84,9 +79,7 @@ func (p *Parser) parseObject(owner *HoconValue, root bool, currentPath string) e
 			if oldObj == nil || obj == nil {
 				break
 			}
-			if err := obj.Merge(oldObj); err != nil {
-				return err
-			}
+			obj.Merge(oldObj)
 			rootObj = rootObj.oldValue
 		}
 	}
@@ -124,9 +117,7 @@ func (p *Parser) parseObject(owner *HoconValue, root bool, currentPath string) e
 				return err
 			}
 
-			if err := objectV.Merge(otherObj); err != nil {
-				return err
-			}
+			objectV.Merge(otherObj)
 		case TokenTypeEoF:
 		case TokenTypeKey:
 			value := currentObject.GetOrCreateKey(t.value)
@@ -159,24 +150,14 @@ func (p *Parser) parseKeyContent(value *HoconValue, currentPath string) error {
 			return p.parseObject(value, false, currentPath)
 		case TokenTypeAssign:
 			{
-				isObject, err := value.IsObject()
-				if err != nil {
-					return err
-				}
-
-				if !isObject {
+				if !value.IsObject() {
 					value.Clear()
 				}
 			}
 			return p.ParseValue(value, false, currentPath)
 		case TokenTypePlusAssign:
 			{
-				isObject, err := value.IsObject()
-				if err != nil {
-					return err
-				}
-
-				if !isObject {
+				if !value.IsObject() {
 					value.Clear()
 				}
 			}
@@ -210,12 +191,7 @@ func (p *Parser) ParseValue(owner *HoconValue, isEqualPlus bool, currentPath str
 		switch t.tokenType {
 		case TokenTypeEoF:
 		case TokenTypeLiteralValue:
-			isObject, err := owner.IsObject()
-			if err != nil {
-				return err
-			}
-
-			if isObject {
+			if owner.IsObject() {
 				owner.Clear()
 			}
 			lit := NewHoconLiteral(t.value)
@@ -298,10 +274,6 @@ func getNode(root *HoconValue, path string) (*HoconValue, error) {
 		currentNode, err = currentNode.GetChildObject(key)
 		if err != nil {
 			return nil, err
-		}
-
-		if currentNode == nil {
-			return nil, nil
 		}
 	}
 	return currentNode, nil

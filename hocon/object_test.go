@@ -25,7 +25,7 @@ func TestHoconObject_GetArray(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "can not return an array",
+			name:    "cannot return an array",
 			wantErr: true,
 		},
 	}
@@ -203,7 +203,7 @@ func TestHoconObject_GetString(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "can not return a string",
+			name:    "cannot return a string",
 			wantErr: true,
 		},
 	}
@@ -325,11 +325,10 @@ func TestHoconObject_Merge(t *testing.T) {
 		other *HoconObject
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *HoconObject
-		wantErr bool
+		name   string
+		fields fields
+		args   args
+		want   *HoconObject
 	}{
 		{
 			name: "merges with nil correctly",
@@ -381,27 +380,12 @@ func TestHoconObject_Merge(t *testing.T) {
 					[]string{simpleKey1},
 					[]HoconElement{wrapInValue(simpleLiteral1)}),
 			},
-			wantErr: true,
-		},
-		{
-			name: "fails to merge with cycled object with the same key",
-			fields: fields{
-				items: map[string]*HoconValue{simpleKey1: wrapInValue(simpleLiteral1)},
-				keys:  []string{simpleKey1},
-			},
-			args:    args{other: wrapInObject(simpleKey1, getCycledSubstitution())},
-			wantErr: true,
-		},
-		{
-			name: "fails to merge nested cycled object with the same key",
-			fields: fields{
+			want: &HoconObject{
 				items: map[string]*HoconValue{
-					simpleKey1: wrapInValue(wrapInObject(simpleKey1, getCycledSubstitution())),
+					simpleKey1: wrapInValue(getCycledSubstitution()),
 				},
-				keys: []string{"a"},
+				keys: []string{simpleKey1},
 			},
-			args:    args{other: wrapInObject(simpleKey1, wrapInObject(simpleKey1, simpleLiteral1))},
-			wantErr: true,
 		},
 	}
 
@@ -412,15 +396,10 @@ func TestHoconObject_Merge(t *testing.T) {
 				keys:  tt.fields.keys,
 			}
 
-			err := p.Merge(tt.args.other)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Merge() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			p.Merge(tt.args.other)
 
-			if err == nil {
-				if !reflect.DeepEqual(p, tt.want) {
-					t.Errorf("Merge() got = %v, want %v", p, tt.want)
-				}
+			if !reflect.DeepEqual(p, tt.want) {
+				t.Errorf("Merge() got = %v, want %v", p, tt.want)
 			}
 		})
 	}
@@ -435,11 +414,10 @@ func TestHoconObject_MergeImmutable(t *testing.T) {
 		other *HoconObject
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *HoconObject
-		wantErr bool
+		name   string
+		fields fields
+		args   args
+		want   *HoconObject
 	}{
 		{
 			name: "merges with nil correctly",
@@ -493,19 +471,6 @@ func TestHoconObject_MergeImmutable(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "merge cycled object with same key fails",
-			fields: fields{
-				items: map[string]*HoconValue{
-					simpleKey1: wrapInValue(getCycledSubstitution()),
-				},
-				keys: []string{simpleKey1},
-			},
-			args: args{
-				other: wrapInObject(simpleKey1, simpleLiteral1),
-			},
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -513,11 +478,7 @@ func TestHoconObject_MergeImmutable(t *testing.T) {
 				items: tt.fields.items,
 				keys:  tt.fields.keys,
 			}
-			got, err := p.MergeImmutable(tt.args.other)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MergeImmutable() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := p.MergeImmutable(tt.args.other)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MergeImmutable() got = %v, want %v", got, tt.want)
 			}
@@ -560,16 +521,6 @@ func TestHoconObject_String(t *testing.T) {
 				"  " + simpleKey2 + " : " + simpleLiteral2.value + newLine +
 				"}" + newLine,
 		},
-		{
-			name: "fails with cycled object",
-			fields: fields{
-				items: map[string]*HoconValue{
-					simpleKey1: wrapInValue(getCycledSubstitution()),
-				},
-				keys: []string{simpleKey1},
-			},
-			want: cannotGetStringError,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -593,11 +544,10 @@ func TestHoconObject_ToString(t *testing.T) {
 		indent int
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    string
-		wantErr bool
+		name   string
+		fields fields
+		args   args
+		want   string
 	}{
 		{
 			name:   "empty object returns empty string",
@@ -662,11 +612,7 @@ func TestHoconObject_ToString(t *testing.T) {
 				items: tt.fields.items,
 				keys:  tt.fields.keys,
 			}
-			got, err := p.ToString(tt.args.indent)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ToString() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := p.ToString(tt.args.indent)
 			if got != tt.want {
 				t.Errorf("ToString() got = %v, want %v", got, tt.want)
 			}
@@ -686,9 +632,9 @@ func TestHoconObject_Unwrapped(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "empty object unwraps as nil",
-			fields: fields{},
-			want:   nil,
+			name:    "empty object cannot be unwrapped",
+			fields:  fields{},
+			wantErr: true,
 		},
 		{
 			name: "returns its items",
@@ -712,28 +658,6 @@ func TestHoconObject_Unwrapped(t *testing.T) {
 			want: map[string]interface{}{
 				simpleKey1: map[string]interface{}{simpleKey2: wrapInValue(simpleLiteral2)},
 			},
-		},
-		{
-			name: "fails with cycled object",
-			fields: fields{
-				items: map[string]*HoconValue{
-					simpleKey1: wrapInValue(getCycledSubstitution()),
-				},
-				keys: []string{simpleKey1},
-			},
-			wantErr: true,
-		},
-		{
-			name: "fails to merge with nested cycled object",
-			fields: fields{
-				items: map[string]*HoconValue{
-					simpleKey1: wrapInValue(
-						wrapInSubstitution(
-							wrapInObject(simpleKey2, getCycledSubstitution()))),
-				},
-				keys: []string{simpleKey1},
-			},
-			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

@@ -230,6 +230,7 @@ func (p *HoconTokenizer) PullNext() (*Token, error) {
 	var err error
 
 	p.PullWhitespaceAndComments()
+
 	if p.IsDot() {
 		token = p.PullDot()
 	} else if p.IsObjectStart() {
@@ -689,4 +690,66 @@ func (p *HoconTokenizer) isValue() bool {
 		return true
 	}
 	return false
+}
+
+func (p *HoconTokenizer) getTokenType() TokenType {
+	p.PullWhitespaceAndComments()
+
+	if p.IsDot() {
+		return TokenTypeDot
+	}
+	if p.IsObjectStart() {
+		return TokenTypeObjectStart
+	}
+	if p.IsEndOfObject() {
+		return TokenTypeObjectEnd
+	}
+	if p.IsAssignment() {
+		return TokenTypeAssign
+	}
+	if p.IsPlusAssignment() {
+		return TokenTypePlusAssign
+	}
+	if p.IsInclude() {
+		return TokenTypeInclude
+	}
+	if p.isStartOfQuotedKey() {
+		return TokenTypeKey
+	}
+	if p.IsUnquotedKeyStart() {
+		return TokenTypeKey
+	}
+	if p.IsArrayStart() {
+		return TokenTypeArrayStart
+	}
+	if p.IsArrayEnd() {
+		return TokenTypeArrayEnd
+	}
+	if p.EOF() {
+		return TokenTypeEoF
+	}
+	if p.isUnquotedText() {
+		return TokenTypeLiteralValue
+	}
+	//const (
+	//	TokenTypeNone TokenType = iota
+	//	TokenTypeComment
+	//	TokenTypeKey
+	//	TokenTypeLiteralValue
+	//	TokenTypeAssign
+	//	TokenTypePlusAssign
+	//	TokenTypeObjectStart
+	//	TokenTypeObjectEnd
+	//	TokenTypeDot
+	//	TokenTypeNewline
+	//	TokenTypeEoF
+	//	TokenTypeArrayStart
+	//	TokenTypeArrayEnd
+	//	TokenTypeComma
+	//	TokenTypeSubstitute
+	//	TokenTypeInclude
+	//
+	//	unknownTokenType = "<<unknown token type>>"
+	//)
+	return 0
 }
