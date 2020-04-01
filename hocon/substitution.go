@@ -46,25 +46,26 @@ func (p *HoconSubstitution) IsArray() bool {
 }
 func (p *HoconSubstitution) GetArray() ([]*HoconValue, error) {
 	if p.ResolvedValue == nil {
-		return nil, nil
+		return nil, fmt.Errorf("cannot get array from nil HoconSubstitution")
 	}
 	return p.ResolvedValue.GetArray()
 }
 
-func (p *HoconSubstitution) IsObject() (bool, error) {
+func (p *HoconSubstitution) IsObject() bool {
 	if p.ResolvedValue == nil {
-		return false, nil
+		return false
 	}
 	if err := p.checkCycleRef(); err != nil {
-		return false, err
+		return false
 	}
 	return p.ResolvedValue.IsObject()
 }
 
 func (p *HoconSubstitution) GetObject() (*HoconObject, error) {
 	if p.ResolvedValue == nil {
-		return nil, nil
+		return nil, fmt.Errorf("cannot get object from nil HoconSubstitution")
 	}
+
 	if err := p.checkCycleRef(); err != nil {
 		return nil, err
 	}

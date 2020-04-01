@@ -35,8 +35,8 @@ func (p *HoconObject) GetKeys() []string {
 }
 
 func (p *HoconObject) Unwrapped() (map[string]interface{}, error) {
-	if len(p.items) == 0 {
-		return nil, nil
+	if p.items == nil || len(p.items) == 0 {
+		return nil, fmt.Errorf("empty HoconObject cannot be unwrapped")
 	}
 
 	dict := map[string]interface{}{}
@@ -44,15 +44,19 @@ func (p *HoconObject) Unwrapped() (map[string]interface{}, error) {
 	for _, k := range p.keys {
 		v := p.items[k]
 
-		obj, err := v.GetObject()
-		if err != nil {
-			return nil, err
-		}
-		if obj != nil {
-			unwrapped, err := obj.Unwrapped()
-			if err != nil {
-				return nil, err
+		if v.IsObject() {
+			obj, err1 := v.GetObject()
+			// must not return error after checking v.IsObject()
+			if err1 != nil {
+				panic(err1)
 			}
+
+			unwrapped, err2 := obj.Unwrapped()
+			// must not return error after checking v.IsObject()
+			if err2 != nil {
+				panic(err1)
+			}
+
 			dict[k] = unwrapped
 		} else {
 			dict[k] = v
@@ -93,32 +97,25 @@ func (p *HoconObject) IsString() bool {
 }
 
 func (p *HoconObject) String() string {
-	str, err := p.ToString(0)
-	if err != nil {
-		return fmt.Sprintf("cannot get string: %s", err.Error())
-	}
-	return str
+	return p.ToString(0)
 }
 
-func (p *HoconObject) ToString(indent int) (string, error) {
+func (p *HoconObject) ToString(indent int) string {
 	tmp := strings.Repeat(" ", indent*2)
 	buf := bytes.NewBuffer(nil)
 	for _, k := range p.keys {
 		key := quoteStringIfNeeded(k)
 		v := p.items[key]
 
-		str, err := v.ToString(indent)
-		if err != nil {
-			return "", err
-		}
+		str := v.ToString(indent)
 		buf.WriteString(fmt.Sprintf("%s%s : %s%s", tmp, key, str, newLine))
 	}
-	return buf.String(), nil
+	return buf.String()
 }
 
-func (p *HoconObject) Merge(other *HoconObject) error {
+func (p *HoconObject) Merge(other *HoconObject) {
 	if other == nil {
-		return nil
+		return
 	}
 
 	thisValues := p.items
@@ -130,49 +127,42 @@ func (p *HoconObject) Merge(other *HoconObject) error {
 		otherValue := otherItems[otherKey]
 
 		if thisValue, exist := thisValues[otherKey]; exist {
-			isThisObject, err1 := thisValue.IsObject()
-			if err1 != nil {
-				return err1
-			}
-
-			isOtherObject, err2 := otherValue.IsObject()
-			if err2 != nil {
-				return err2
-			}
+			isThisObject := thisValue.IsObject()
+			isOtherObject := otherValue.IsObject()
 
 			if isThisObject && isOtherObject {
 				thisValueObject, err := thisValue.GetObject()
+				// must not return error after checking thisValue.IsObject()
 				if err != nil {
-					return err
+					panic(err)
 				}
+
 				otherObjectValue, err := otherValue.GetObject()
+				// must not return error after checking otherValue.IsObject()
 				if err != nil {
-					return err
+					panic(err)
 				}
-				if err := thisValueObject.Merge(otherObjectValue); err != nil {
-					return err
-				}
+
+				thisValueObject.Merge(otherObjectValue)
 			}
 		} else {
 			p.items[otherKey] = otherValue
 			p.keys = append(p.keys, otherKey)
 		}
 	}
-	return nil
+	return
 }
 
-func (p *HoconObject) MergeImmutable(other *HoconObject) (*HoconObject, error) {
+func (p *HoconObject) MergeImmutable(other *HoconObject) *HoconObject {
 	thisValues := p.items
 	thisKeys := p.keys
 	newObject := HoconObject{items: thisValues, keys: thisKeys}
 
 	if other == nil {
-		return &newObject, nil
+		return &newObject
 	}
 
-	if err := newObject.Merge(other); err != nil {
-		return nil, err
-	}
+	newObject.Merge(other)
 
-	return &newObject, nil
+	return &newObject
 }
