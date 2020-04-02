@@ -150,7 +150,6 @@ func (p *HoconObject) Merge(other *HoconObject) {
 			p.keys = append(p.keys, otherKey)
 		}
 	}
-	return
 }
 
 func (p *HoconObject) MergeImmutable(other *HoconObject) *HoconObject {

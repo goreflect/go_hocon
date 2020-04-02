@@ -5,14 +5,6 @@ import (
 	"testing"
 )
 
-const (
-	cannotGetStringError string = "cannot get string: cycle reference in path of "
-)
-
-var (
-//simpleLiteral1 = NewHoconLiteral("value")
-)
-
 func TestHoconObject_GetArray(t *testing.T) {
 	type fields struct {
 		items map[string]*HoconValue
