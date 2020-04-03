@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -65,7 +66,7 @@ func (p *Config) Copy(fallback ...*Config) *Config {
 
 func (p *Config) GetNode(path string) (*hocon.HoconValue, error) {
 	if p == nil {
-		return nil, nil
+		return nil, fmt.Errorf("cannot get node from nil Config")
 	}
 
 	elements := splitDottedPathHonouringQuotes(path)
@@ -86,7 +87,7 @@ func (p *Config) GetNode(path string) (*hocon.HoconValue, error) {
 			if p.fallback != nil {
 				return p.fallback.GetNode(path)
 			}
-			return nil, nil
+			return nil, fmt.Errorf("cannot get node from nil Config")
 		}
 	}
 	return currentNode, nil
@@ -230,9 +231,6 @@ func (p *Config) GetBooleanList(path string) ([]bool, error) {
 		return nil, err
 	}
 
-	if obj == nil {
-		return nil, nil
-	}
 	return obj.GetBooleanList()
 }
 
@@ -242,9 +240,6 @@ func (p *Config) GetFloat32List(path string) ([]float32, error) {
 		return nil, err
 	}
 
-	if obj == nil {
-		return nil, nil
-	}
 	return obj.GetFloat32List()
 }
 
@@ -254,9 +249,6 @@ func (p *Config) GetFloat64List(path string) ([]float64, error) {
 		return nil, err
 	}
 
-	if obj == nil {
-		return nil, nil
-	}
 	return obj.GetFloat64List()
 }
 
@@ -266,9 +258,6 @@ func (p *Config) GetInt32List(path string) ([]int32, error) {
 		return nil, err
 	}
 
-	if obj == nil {
-		return nil, nil
-	}
 	return obj.GetInt32List()
 }
 
@@ -278,9 +267,6 @@ func (p *Config) GetInt64List(path string) ([]int64, error) {
 		return nil, err
 	}
 
-	if obj == nil {
-		return nil, nil
-	}
 	return obj.GetInt64List()
 }
 
@@ -290,9 +276,6 @@ func (p *Config) GetByteList(path string) ([]byte, error) {
 		return nil, err
 	}
 
-	if obj == nil {
-		return nil, nil
-	}
 	return obj.GetByteList()
 }
 
@@ -302,15 +285,12 @@ func (p *Config) GetStringList(path string) ([]string, error) {
 		return nil, err
 	}
 
-	if obj == nil {
-		return nil, nil
-	}
 	return obj.GetStringList()
 }
 
 func (p *Config) GetConfig(path string) (*Config, error) {
 	if p == nil {
-		return nil, nil
+		return nil, fmt.Errorf("cannot get config from nil Config")
 	}
 
 	value, err := p.GetNode(path)
@@ -325,7 +305,7 @@ func (p *Config) GetConfig(path string) (*Config, error) {
 		}
 
 		if value == nil && f == nil {
-			return nil, nil
+			return nil, fmt.Errorf("cannot either get value nor perform fallback for path " + path)
 		}
 		if value == nil {
 			return f, nil
@@ -339,7 +319,7 @@ func (p *Config) GetConfig(path string) (*Config, error) {
 	}
 
 	if value == nil {
-		return nil, nil
+		return nil, fmt.Errorf("cannot get value for path " + path)
 	}
 	return NewConfigFromRoot(hocon.NewHoconRoot(value))
 }
@@ -350,7 +330,7 @@ func (p *Config) GetValue(path string) (*hocon.HoconValue, error) {
 
 func (p *Config) WithFallback(fallback *Config) (*Config, error) {
 	if fallback == p {
-		return nil, nil
+		return nil, fmt.Errorf("cannot perform WithFallback on nil Config")
 	}
 
 	if fallback == nil {
@@ -367,10 +347,7 @@ func (p *Config) WithFallback(fallback *Config) (*Config, error) {
 		return nil, err
 	}
 
-	mergedRoot, err := selfObjectV.MergeImmutable(fallbackObjectV)
-	if err != nil {
-		return nil, err
-	}
+	mergedRoot := selfObjectV.MergeImmutable(fallbackObjectV)
 
 	newRoot := hocon.NewHoconValue()
 
@@ -393,8 +370,8 @@ func (p *Config) HasPath(path string) bool {
 }
 
 func (p *Config) IsObject(path string) bool {
-	node, err := p.GetNode(path)
-	if err != nil || node == nil {
+	node, _ := p.GetNode(path)
+	if node == nil {
 		return false
 	}
 

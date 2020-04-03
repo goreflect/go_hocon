@@ -46,7 +46,7 @@ func (p *HoconSubstitution) IsArray() bool {
 }
 func (p *HoconSubstitution) GetArray() ([]*HoconValue, error) {
 	if p.ResolvedValue == nil {
-		return nil, nil
+		return nil, fmt.Errorf("cannot get array from nil HoconSubstitution")
 	}
 	return p.ResolvedValue.GetArray()
 }
@@ -63,8 +63,9 @@ func (p *HoconSubstitution) IsObject() bool {
 
 func (p *HoconSubstitution) GetObject() (*HoconObject, error) {
 	if p.ResolvedValue == nil {
-		return nil, nil
+		return nil, fmt.Errorf("cannot get object from nil HoconSubstitution")
 	}
+
 	if err := p.checkCycleRef(); err != nil {
 		return nil, err
 	}
@@ -72,39 +73,28 @@ func (p *HoconSubstitution) GetObject() (*HoconObject, error) {
 }
 
 func (p *HoconSubstitution) checkCycleRef() error {
-	if p.hasCycleRef(map[HoconElement]int{}, 1, p.ResolvedValue) {
+	if p.hasCycleRef(map[HoconElement]int{}, 1) {
 		return fmt.Errorf("cycle reference in path of %s", p.Path)
 	}
 	return nil
 }
 
-// Temporary solution
-func (p *HoconSubstitution) hasCycleRef(dup map[HoconElement]int, level int, v interface{}) bool {
-	if v == nil {
+func (p *HoconSubstitution) hasCycleRef(dup map[HoconElement]int, level int) bool {
+	if p.ResolvedValue == nil {
 		return false
 	}
 
-	val, ok := v.(*HoconValue)
-	if val == nil {
-		return false
-	}
-
-	if !ok {
-		return false
-	}
-
-	if lvl, exist := dup[val]; exist {
+	if lvl, exist := dup[p.ResolvedValue]; exist {
 		if lvl != level {
 			return true
 		}
 	}
-	dup[val] = level
+	dup[p.ResolvedValue] = level
 
-	for _, subV := range val.values {
+	for _, subV := range p.ResolvedValue.values {
 		if sub, ok := subV.(*HoconSubstitution); ok {
-
 			if sub.ResolvedValue != nil {
-				return p.hasCycleRef(dup, level+1, sub.ResolvedValue)
+				return sub.hasCycleRef(dup, level+1)
 			}
 		}
 	}
